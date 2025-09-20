@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}棚削除確認 - 棚割りアプリ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">棚削除確認</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    以下の棚を削除してもよろしいですか？
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h5>{{ shelf.name }}</h5>
+                        {% if shelf.description %}
+                            <p class="text-muted">{{ shelf.description }}</p>
+                        {% endif %}
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted">サイズ</small>
+                                <div class="fw-bold">{{ shelf.width }}×{{ shelf.height }}cm</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">段数</small>
+                                <div class="fw-bold">{{ shelf.rows }}段</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">列数</small>
+                                <div class="fw-bold">{{ shelf.columns }}列</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'shelves:shelf_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> 削除する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

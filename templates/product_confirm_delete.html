@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}商品削除確認 - 棚割りアプリ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">商品削除確認</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    以下の商品を削除してもよろしいですか？
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.product_name }}" class="img-fluid rounded">
+                        {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center rounded" style="height: 150px;">
+                                <i class="bi bi-image display-4 text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5>{{ product.product_name }}</h5>
+                        <p class="mb-1"><strong>JANコード:</strong> {{ product.product_code }}</p>
+                        <p class="mb-1"><strong>メーカー:</strong> {{ product.maker.name }}</p>
+                        <p class="mb-1"><strong>ブランド:</strong> {{ product.brand.name|default:"-" }}</p>
+                        <p class="mb-1"><strong>カテゴリ:</strong> {{ product.category.name }}</p>
+                        {% if product.is_own_product %}
+                            <span class="badge bg-success">自社商品</span>
+                        {% else %}
+                            <span class="badge bg-warning">競合商品</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'products:product_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> 削除する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

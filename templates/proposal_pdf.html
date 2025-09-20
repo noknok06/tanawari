@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ proposal.title }} - 棚割り提案書</title>
+</head>
+<body>
+    <div class="header">
+        <h1>棚割り提案書</h1>
+        <h2>{{ proposal.title }}</h2>
+        <p>出力日時: {{ export_date|date:"Y年m月d日 H:i" }}</p>
+    </div>
+
+    <div class="proposal-info">
+        <h3>提案情報</h3>
+        <table class="stats-table">
+            <tr>
+                <th>得意先</th>
+                <td>{{ proposal.customer.name }}</td>
+            </tr>
+            <tr>
+                <th>営業担当</th>
+                <td>{{ proposal.sales_rep|default:"-" }}</td>
+            </tr>
+            <tr>
+                <th>提案日</th>
+                <td>{{ proposal.proposal_date|date:"Y年m月d日" }}</td>
+            </tr>
+            <tr>
+                <th>ステータス</th>
+                <td>{{ proposal.get_status_display }}</td>
+            </tr>
+        </table>
+        
+        {% if proposal.description %}
+            <h4>提案内容</h4>
+            <p>{{ proposal.description }}</p>
+        {% endif %}
+    </div>
+
+    <div class="shelf-info">
+        <h3>棚情報</h3>
+        <table class="stats-table">
+            <tr>
+                <th>棚名</th>
+                <td>{{ shelf.name }}</td>
+            </tr>
+            <tr>
+                <th>サイズ</th>
+                <td>{{ shelf.width }}×{{ shelf.height }}×{{ shelf.depth }}cm</td>
+            </tr>
+            <tr>
+                <th>段数×列数</th>
+                <td>{{ shelf.rows }}段×{{ shelf.columns }}列</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="statistics">
+        <h3>配置統計</h3>
+        <table class="stats-table">
+            <tr>
+                <th>項目</th>
+                <th>数値</th>
+                <th>割合</th>
+            </tr>
+            <tr>
+                <td>総セル数</td>
+                <td>{{ stats.total_cells }}</td>
+                <td>100%</td>
+            </tr>
+            <tr>
+                <td>配置済みセル</td>
+                <td>{{ stats.occupied_cells }}</td>
+                <td>{{ stats.occupancy_rate }}%</td>
+            </tr>
+            <tr>
+                <td>自社商品数</td>
+                <td>{{ stats.own_products_count }}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>競合商品数</td>
+                <td>{{ stats.competitor_products_count }}</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>自社フェース数</td>
+                <td>{{ stats.own_faces }}</td>
+                <td>{{ stats.own_share }}%</td>
+            </tr>
+            <tr>
+                <td>競合フェース数</td>
+                <td>{{ stats.competitor_faces }}</td>
+                <td>{{ stats.competitor_faces|floatformat:1 }}%</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="shelf-layout">
+        <h3>棚割りレイアウト</h3>
+        <div class="shelf-grid" style="grid-template-rows: repeat({{ shelf.rows }}, 1fr); grid-template-columns: repeat({{ shelf.columns }}, 1fr);">
+            {% for row in grid %}
+                {% for cell in row %}
+                    <div class="shelf-cell {% if cell %}{% if cell.product.is_own_product %}own-product{% else %}competitor-product{% endif %}{% endif %}">
+                        {% if cell %}
+                            {{ cell.product.product_name|truncatechars:8 }}
+                            {% if cell.face_count > 1 %}({{ cell.face_count }}){% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="product-list">
+        <h3>商品配置一覧</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>位置</th>
+                    <th>商品名</th>
+                    <th>JANコード</th>
+                    <th>メーカー</th>
+                    <th>ブランド</th>
+                    <th>カテゴリ</th>
+                    <th>フェース数</th>
+                    <th>区分</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for placement in placements %}
+                    <tr>
+                        <td>{{ placement.row|add:1 }}段{{ placement.column|add:1 }}列</td>
+                        <td>{{ placement.product.product_name }}</td>
+                        <td>{{ placement.product.product_code }}</td>
+                        <td>{{ placement.product.maker.name }}</td>
+                        <td>{{ placement.product.brand.name|default:"-" }}</td>
+                        <td>{{ placement.product.category.name }}</td>
+                        <td>{{ placement.face_count }}</td>
+                        <td>{% if placement.product.is_own_product %}自社{% else %}競合{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

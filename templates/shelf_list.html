@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}棚一覧 - 棚割りアプリ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>棚一覧</h1>
+    <a href="{% url 'shelves:shelf_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> 棚作成
+    </a>
+</div>
+
+<!-- 検索 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-8">
+                <label for="search" class="form-label">検索</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="棚名、説明">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search"></i> 検索
+                </button>
+                <a href="{% url 'shelves:shelf_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> リセット
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 棚一覧 -->
+<div class="row">
+    {% if shelves %}
+        {% for shelf in shelves %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ shelf.name }}</h5>
+                        {% if shelf.description %}
+                            <p class="card-text text-muted">{{ shelf.description|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <small class="text-muted">サイズ</small>
+                                <div class="fw-bold">{{ shelf.width }}×{{ shelf.height }}cm</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">段数</small>
+                                <div class="fw-bold">{{ shelf.rows }}段</div>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">列数</small>
+                                <div class="fw-bold">{{ shelf.columns }}列</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 棚の簡易プレビュー -->
+                        <div class="shelf-preview mb-3">
+                            <div class="shelf-grid" style="display: grid; grid-template-rows: repeat({{ shelf.rows }}, 1fr); grid-template-columns: repeat({{ shelf.columns }}, 1fr); gap: 1px; height: 80px; border: 2px solid #dee2e6; background-color: #f8f9fa;">
+                                {% for row in shelf.rows|range %}
+                                    {% for col in shelf.columns|range %}
+                                        <div style="background-color: white; border: 1px solid #e9ecef;"></div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <small class="text-muted">
+                            <i class="bi bi-calendar"></i> {{ shelf.created_at|date:"Y/m/d H:i" }}
+                        </small>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100">
+                            <a href="{% url 'shelves:shelf_detail' shelf.pk %}" class="btn btn-primary">
+                                <i class="bi bi-grid-3x3-gap"></i> 棚割り編集
+                            </a>
+                            <a href="{% url 'shelves:shelf_edit' shelf.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'shelves:shelf_delete' shelf.pk %}" class="btn btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-grid-3x3-gap display-1 text-muted"></i>
+                <h4 class="mt-3">棚が見つかりません</h4>
+                <p class="text-muted">検索条件を変更するか、新しい棚を作成してください。</p>
+                <a href="{% url 'shelves:shelf_add' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 棚を作成
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.shelf-preview {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+}
+</style>
+{% endblock %}

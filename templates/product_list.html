@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}商品一覧 - 棚割りアプリ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>商品一覧</h1>
+    <a href="{% url 'products:product_add' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> 商品追加
+    </a>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">検索</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="商品名、JANコード、メーカー名">
+            </div>
+            <div class="col-md-3">
+                <label for="maker" class="form-label">メーカー</label>
+                <select class="form-select" id="maker" name="maker">
+                    <option value="">すべて</option>
+                    {% for maker in makers %}
+                        <option value="{{ maker.id }}" {% if maker.id|stringformat:"s" == selected_maker %}selected{% endif %}>
+                            {{ maker.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="category" class="form-label">カテゴリ</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">すべて</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category.id|stringformat:"s" == selected_category %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="is_own" class="form-label">区分</label>
+                <select class="form-select" id="is_own" name="is_own">
+                    <option value="">すべて</option>
+                    <option value="true" {% if selected_is_own == "true" %}selected{% endif %}>自社商品</option>
+                    <option value="false" {% if selected_is_own == "false" %}selected{% endif %}>競合商品</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="bi bi-search"></i> 検索
+                </button>
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> リセット
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 商品一覧テーブル -->
+<div class="card">
+    <div class="card-body">
+        {% if products %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>画像</th>
+                            <th>商品名</th>
+                            <th>JANコード</th>
+                            <th>メーカー</th>
+                            <th>ブランド</th>
+                            <th>カテゴリ</th>
+                            <th>区分</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                            <tr>
+                                <td>
+                                    {% if product.image %}
+                                        <img src="{{ product.image.url }}" alt="{{ product.product_name }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ product.product_name }}</strong>
+                                    {% if product.size %}
+                                        <br><small class="text-muted">{{ product.size }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ product.product_code }}</code></td>
+                                <td>{{ product.maker.name }}</td>
+                                <td>{{ product.brand.name|default:"-" }}</td>
+                                <td>{{ product.category.name }}</td>
+                                <td>
+                                    {% if product.is_own_product %}
+                                        <span class="badge bg-success">自社</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">競合</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'products:product_edit' product.pk %}" class="btn btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'products:product_delete' product.pk %}" class="btn btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-box-seam display-1 text-muted"></i>
+                <h4 class="mt-3">商品が見つかりません</h4>
+                <p class="text-muted">検索条件を変更するか、新しい商品を追加してください。</p>
+                <a href="{% url 'products:product_add' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 商品を追加
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

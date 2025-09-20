@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - æ£šå‰²ã‚Šã‚¢ãƒ—ãƒª{% endblock %}
+
+{% block extra_css %}
+<style>
+.modal-backdrop {
+    z-index: 1040;
+}
+.modal {
+    z-index: 1050;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.product_name.id_for_label }}" class="form-label">å•†å“å <span class="text-danger">*</span></label>
+                                {{ form.product_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.product_code.id_for_label }}" class="form-label">JANã‚³ãƒ¼ãƒ‰ <span class="text-danger">*</span></label>
+                                {{ form.product_code }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.maker.id_for_label }}" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼ <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    {{ form.maker }}
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#makerModal">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.brand.id_for_label }}" class="form-label">ãƒ–ãƒ©ãƒ³ãƒ‰</label>
+                                <div class="input-group">
+                                    {{ form.brand }}
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#brandModal">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">ã‚«ãƒ†ã‚´ãƒª <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    {{ form.category }}
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.size.id_for_label }}" class="form-label">å®¹é‡ãƒ»è¦æ ¼</label>
+                                {{ form.size }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">ä¾¡æ ¼</label>
+                                {{ form.price }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.width.id_for_label }}" class="form-label">å¹…(cm)</label>
+                                {{ form.width }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.height.id_for_label }}" class="form-label">é«˜ã•(cm)</label>
+                                {{ form.height }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.depth.id_for_label }}" class="form-label">å¥¥è¡Œã(cm)</label>
+                                {{ form.depth }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.image.id_for_label }}" class="form-label">å•†å“ç”»åƒ</label>
+                                {{ form.image }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.is_own_product }}
+                                    <label class="form-check-label" for="{{ form.is_own_product.id_for_label }}">
+                                        è‡ªç¤¾å•†å“
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'products:product_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> æˆ»ã‚‹
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> ä¿å­˜
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<div class="modal fade" id="makerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="makerForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="makerName" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼å</label>
+                        <input type="text" class="form-control" id="makerName" name="name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                <button type="button" class="btn btn-primary" onclick="addMaker()">è¿½åŠ </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<div class="modal fade" id="brandModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="brandForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="brandMaker" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼</label>
+                        <select class="form-select" id="brandMaker" name="maker" required>
+                            <option value="">é¸æŠžã—ã¦ãã ã•ã„</option>
+                            {% for maker in form.maker.field.queryset %}
+                                <option value="{{ maker.id }}">{{ maker.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="brandName" class="form-label">ãƒ–ãƒ©ãƒ³ãƒ‰å</label>
+                        <input type="text" class="form-control" id="brandName" name="name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                <button type="button" class="btn btn-primary" onclick="addBrand()">è¿½åŠ </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ã‚«ãƒ†ã‚´ãƒªè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ã‚«ãƒ†ã‚´ãƒªè¿½åŠ </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="categoryParent" class="form-label">è¦ªã‚«ãƒ†ã‚´ãƒª</label>
+                        <select class="form-select" id="categoryParent" name="parent">
+                            <option value="">ãªã—ï¼ˆãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ï¼‰</option>
+                            {% for category in form.category.field.queryset %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">ã‚«ãƒ†ã‚´ãƒªå</label>
+                        <input type="text" class="form-control" id="categoryName" name="name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                <button type="button" class="btn btn-primary" onclick="addCategory()">è¿½åŠ </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ 
+function addMaker() {
+    const form = document.getElementById('makerForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "products:add_maker" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // ãƒ¡ãƒ¼ã‚«ãƒ¼é¸æŠžè‚¢ã«è¿½åŠ 
+            const makerSelect = document.getElementById('{{ form.maker.id_for_label }}');
+            const option = new Option(data.maker.name, data.maker.id, true, true);
+            makerSelect.add(option);
+            
+            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            const modal = bootstrap.Modal.getInstance(document.getElementById('makerModal'));
+            modal.hide();
+            
+            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            form.reset();
+        } else {
+            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+        }
+    });
+}
+
+// ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ 
+function addBrand() {
+    const form = document.getElementById('brandForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "products:add_brand" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // ãƒ–ãƒ©ãƒ³ãƒ‰é¸æŠžè‚¢ã«è¿½åŠ 
+            const brandSelect = document.getElementById('{{ form.brand.id_for_label }}');
+            const option = new Option(data.brand.name, data.brand.id, true, true);
+            brandSelect.add(option);
+            
+            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            const modal = bootstrap.Modal.getInstance(document.getElementById('brandModal'));
+            modal.hide();
+            
+            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            form.reset();
+        } else {
+            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+        }
+    });
+}
+
+// ã‚«ãƒ†ã‚´ãƒªè¿½åŠ 
+function addCategory() {
+    const form = document.getElementById('categoryForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "products:add_category" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // ã‚«ãƒ†ã‚´ãƒªé¸æŠžè‚¢ã«è¿½åŠ 
+            const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+            const option = new Option(data.category.name, data.category.id, true, true);
+            categorySelect.add(option);
+            
+            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+            modal.hide();
+            
+            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            form.reset();
+        } else {
+            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+        }
+    });
+}
+
+// ãƒ¡ãƒ¼ã‚«ãƒ¼å¤‰æ›´æ™‚ã«ãƒ–ãƒ©ãƒ³ãƒ‰ã‚’æ›´æ–°
+document.getElementById('{{ form.maker.id_for_label }}').addEventListener('change', function() {
+    const makerId = this.value;
+    const brandSelect = document.getElementById('{{ form.brand.id_for_label }}');
+    
+    if (makerId) {
+        fetch(`{% url "products:get_brands_by_maker" %}?maker_id=${makerId}`)
+        .then(response => response.json())
+        .then(data => {
+            brandSelect.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
+            data.brands.forEach(brand => {
+                brandSelect.add(new Option(brand.name, brand.id));
+            });
+        });
+    } else {
+        brandSelect.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - æ£šå‰²ã‚Šã‚¢ãƒ—ãƒª{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">æ£šå <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">èª¬æ˜Ž</label>
+                                {{ form.description }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.width.id_for_label }}" class="form-label">å¹…(cm) <span class="text-danger">*</span></label>
+                                {{ form.width }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.height.id_for_label }}" class="form-label">é«˜ã•(cm) <span class="text-danger">*</span></label>
+                                {{ form.height }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.depth.id_for_label }}" class="form-label">å¥¥è¡Œã(cm) <span class="text-danger">*</span></label>
+                                {{ form.depth }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.rows.id_for_label }}" class="form-label">æ®µæ•° <span class="text-danger">*</span></label>
+                                {{ form.rows }}
+                                <div class="form-text">1ã€œ20æ®µã¾ã§è¨­å®šå¯èƒ½</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.columns.id_for_label }}" class="form-label">åˆ—æ•° <span class="text-danger">*</span></label>
+                                {{ form.columns }}
+                                <div class="form-text">1ã€œ20åˆ—ã¾ã§è¨­å®šå¯èƒ½</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ -->
+                    <div class="mb-4">
+                        <label class="form-label">ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼</label>
+                        <div id="shelf-preview" class="border rounded p-3" style="background-color: #f8f9fa;">
+                            <div id="shelf-grid" style="display: grid; gap: 2px; max-width: 400px; margin: 0 auto;">
+                                <!-- JavaScript ã§å‹•çš„ã«ç”Ÿæˆ -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'shelves:shelf_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> æˆ»ã‚‹
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> ä¿å­˜
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updatePreview() {
+    const rows = parseInt(document.getElementById('{{ form.rows.id_for_label }}').value) || 1;
+    const columns = parseInt(document.getElementById('{{ form.columns.id_for_label }}').value) || 1;
+    const grid = document.getElementById('shelf-grid');
+    
+    // ã‚°ãƒªãƒƒãƒ‰ã‚¹ã‚¿ã‚¤ãƒ«ã‚’æ›´æ–°
+    grid.style.gridTemplateRows = `repeat(${rows}, 30px)`;
+    grid.style.gridTemplateColumns = `repeat(${columns}, 30px)`;
+    
+    // ã‚»ãƒ«ã‚’ã‚¯ãƒªã‚¢
+    grid.innerHTML = '';
+    
+    // ã‚»ãƒ«ã‚’ç”Ÿæˆ
+    for (let i = 0; i < rows * columns; i++) {
+        const cell = document.createElement('div');
+        cell.style.backgroundColor = 'white';
+        cell.style.border = '1px solid #dee2e6';
+        cell.style.borderRadius = '2px';
+        grid.appendChild(cell);
+    }
+}
+
+// åˆæœŸãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼è¡¨ç¤º
+document.addEventListener('DOMContentLoaded', updatePreview);
+
+// æ®µæ•°ãƒ»åˆ—æ•°å¤‰æ›´æ™‚ã«ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’æ›´æ–°
+document.getElementById('{{ form.rows.id_for_label }}').addEventListener('input', updatePreview);
+document.getElementById('{{ form.columns.id_for_label }}').addEventListener('input', updatePreview);
+</script>
+{% endblock %}

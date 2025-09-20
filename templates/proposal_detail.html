@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ proposal.title }} - ææ¡ˆè©³ç´°{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ proposal.title }}</h1>
+        <p class="text-muted mb-0">
+            {{ proposal.customer.name }} | {{ proposal.proposal_date|date:"Yå¹´mæœˆdæ—¥" }}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'proposals:export_pdf' proposal.pk %}" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf"></i> PDFå‡ºåŠ›
+        </a>
+        <a href="{% url 'proposals:export_excel' proposal.pk %}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Excelå‡ºåŠ›
+        </a>
+        <a href="{% url 'proposals:proposal_edit' proposal.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> ç·¨é›†
+        </a>
+        <a href="{% url 'proposals:proposal_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> ä¸€è¦§
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- ææ¡ˆæƒ…å ± -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">ææ¡ˆæƒ…å ±</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge {% if proposal.status == 'draft' %}bg-secondary{% elif proposal.status == 'submitted' %}bg-primary{% elif proposal.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ proposal.get_status_display }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-4">å¾—æ„å…ˆ:</dt>
+                    <dd class="col-sm-8">{{ proposal.customer.name }}</dd>
+                    
+                    <dt class="col-sm-4">å–¶æ¥­æ‹…å½“:</dt>
+                    <dd class="col-sm-8">{{ proposal.sales_rep|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-4">æ£š:</dt>
+                    <dd class="col-sm-8">{{ proposal.shelf.name }}</dd>
+                    
+                    <dt class="col-sm-4">ææ¡ˆæ—¥:</dt>
+                    <dd class="col-sm-8">{{ proposal.proposal_date|date:"Yå¹´mæœˆdæ—¥" }}</dd>
+                </dl>
+                
+                {% if proposal.description %}
+                    <h6>ææ¡ˆå†…å®¹</h6>
+                    <p class="text-muted">{{ proposal.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- çµ±è¨ˆæƒ…å ± -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">é…ç½®çµ±è¨ˆ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="h4 text-primary">{{ stats.occupied_cells }}</div>
+                        <small class="text-muted">é…ç½®å•†å“æ•°</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-info">{{ stats.occupancy_rate }}%</div>
+                        <small class="text-muted">å æœ‰çŽ‡</small>
+                    </div>
+                </div>
+                
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="h5 text-success">{{ stats.own_products_count }}</div>
+                        <small class="text-muted">è‡ªç¤¾å•†å“</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ stats.competitor_products_count }}</div>
+                        <small class="text-muted">ç«¶åˆå•†å“</small>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-success">{{ stats.own_faces }}</div>
+                        <small class="text-muted">è‡ªç¤¾ãƒ•ã‚§ãƒ¼ã‚¹</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ stats.competitor_faces }}</div>
+                        <small class="text-muted">ç«¶åˆãƒ•ã‚§ãƒ¼ã‚¹</small>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <div class="h4 text-primary">{{ stats.own_share }}%</div>
+                    <small class="text-muted">è‡ªç¤¾ã‚·ã‚§ã‚¢ï¼ˆãƒ•ã‚§ãƒ¼ã‚¹æ•°ãƒ™ãƒ¼ã‚¹ï¼‰</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- æ£šå‰²ã‚Šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">æ£šå‰²ã‚Šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ - {{ shelf.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="shelf-container mb-3">
+                    <div class="shelf-grid" 
+                         style="display: grid; grid-template-rows: repeat({{ shelf.rows }}, 1fr); grid-template-columns: repeat({{ shelf.columns }}, 1fr); gap: 2px; max-width: 600px; margin: 0 auto; border: 2px solid #dee2e6; background-color: #f8f9fa; padding: 1rem;">
+                        {% for row in grid %}
+                            {% for cell in row %}
+                                <div class="shelf-cell {% if cell %}occupied {% if cell.product.is_own_product %}own-product{% else %}competitor-product{% endif %}{% endif %}"
+                                     style="aspect-ratio: 1; border: 1px solid #dee2e6; background-color: {% if cell %}{% if cell.product.is_own_product %}#d4edda{% else %}#fff3cd{% endif %}{% else %}white{% endif %}; border-radius: 3px; position: relative; min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                                    {% if cell %}
+                                        <div style="position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 0.7rem; text-align: center; overflow: hidden;">
+                                            {% if cell.product.image %}
+                                                <img src="{{ cell.product.image.url }}" alt="{{ cell.product.product_name }}" style="width: 25px; height: 25px; object-fit: cover; border-radius: 2px; margin-bottom: 2px;">
+                                            {% endif %}
+                                            <div style="font-weight: bold;">{{ cell.product.product_name|truncatechars:8 }}</div>
+                                            <small style="color: #6c757d;">{{ cell.product.maker.name|truncatechars:6 }}</small>
+                                        </div>
+                                        {% if cell.face_count > 1 %}
+                                            <div style="position: absolute; top: 2px; right: 2px; background-color: #0d6efd; color: white; border-radius: 50%; width: 14px; height: 14px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center;">{{ cell.face_count }}</div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <small class="text-muted">
+                        <span class="badge" style="background-color: #d4edda; color: #155724;">è‡ªç¤¾å•†å“</span>
+                        <span class="badge" style="background-color: #fff3cd; color: #856404;">ç«¶åˆå•†å“</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- å•†å“é…ç½®ä¸€è¦§ -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">å•†å“é…ç½®ä¸€è¦§</h5>
+            </div>
+            <div class="card-body">
+                {% if placements %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ä½ç½®</th>
+                                    <th>å•†å“å</th>
+                                    <th>ãƒ¡ãƒ¼ã‚«ãƒ¼</th>
+                                    <th>ãƒ•ã‚§ãƒ¼ã‚¹æ•°</th>
+                                    <th>åŒºåˆ†</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for placement in placements %}
+                                    <tr>
+                                        <td>{{ placement.row|add:1 }}æ®µ{{ placement.column|add:1 }}åˆ—</td>
+                                        <td>{{ placement.product.product_name }}</td>
+                                        <td>{{ placement.product.maker.name }}</td>
+                                        <td>{{ placement.face_count }}</td>
+                                        <td>
+                                            {% if placement.product.is_own_product %}
+                                                <span class="badge bg-success">è‡ªç¤¾</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">ç«¶åˆ</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">å•†å“ãŒé…ç½®ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.shelf-container {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+</style>
+{% endblock %}

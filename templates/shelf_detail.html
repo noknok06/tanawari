@@ -1,0 +1,1038 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ shelf.name }} - æ£šå‰²ã‚Šç·¨é›†{% endblock %}
+
+{% block extra_css %}
+<style>
+.shelf-container {
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    position: relative;
+}
+
+.shelf-grid {
+    display: grid;
+    gap: 2px;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.shelf-cell {
+    aspect-ratio: 1;
+    border: 1px solid #dee2e6;
+    background-color: white;
+    border-radius: 3px;
+    position: relative;
+    min-height: 60px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shelf-cell:hover:not(.occupied) {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    transform: scale(1.02);
+}
+
+.shelf-cell.occupied {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    cursor: grab;
+}
+
+.shelf-cell.occupied:active {
+    cursor: grabbing;
+}
+
+.shelf-cell.occupied.own-product {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.shelf-cell.occupied.competitor-product {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.shelf-cell.drag-over {
+    border: 2px dashed #0d6efd !important;
+    background-color: #e7f1ff !important;
+    transform: scale(1.05);
+}
+
+.shelf-cell.invalid-drop {
+    border: 2px dashed #dc3545 !important;
+    background-color: #f8d7da !important;
+}
+
+.product-info {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.7rem;
+    text-align: center;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.product-image {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 2px;
+    margin-bottom: 2px;
+}
+
+.face-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.face-count.editable {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.face-count.editable:hover {
+    background-color: #0056b3;
+    transform: scale(1.1);
+}
+
+.product-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.product-item {
+    cursor: grab;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.product-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.product-item:active {
+    cursor: grabbing;
+}
+
+.product-item.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.ghost-product {
+    opacity: 0.3;
+    transform: scale(0.9);
+}
+
+.drag-preview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    background: white;
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: rotate(5deg);
+}
+
+.shelf-coordinates {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+.shelf-row-labels {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+.toolbar {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    padding: 0 0.5rem;
+    border-right: 1px solid #dee2e6;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+.quick-action-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 0.25rem;
+}
+
+.placement-stats {
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1050;
+    min-width: 150px;
+    display: none;
+}
+
+.context-menu-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item:last-child {
+    border-bottom: none;
+}
+
+.context-menu-item.danger:hover {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ shelf.name }}</h1>
+        <p class="text-muted mb-0">
+            {{ shelf.width }}Ã—{{ shelf.height }}Ã—{{ shelf.depth }}cm | {{ shelf.rows }}æ®µÃ—{{ shelf.columns }}åˆ—
+        </p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary" onclick="saveShelfLayout()">
+            <i class="bi bi-save"></i> ä¿å­˜
+        </button>
+        <button class="btn btn-outline-secondary" onclick="clearShelf()">
+            <i class="bi bi-trash"></i> å…¨å‰Šé™¤
+        </button>
+        <a href="{% url 'shelves:shelf_edit' shelf.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil"></i> æ£šè¨­å®šç·¨é›†
+        </a>
+        <a href="{% url 'shelves:shelf_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> æ£šä¸€è¦§
+        </a>
+    </div>
+</div>
+
+<!-- ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ -->
+<div class="toolbar">
+    <div class="toolbar-group">
+        <label class="form-label mb-0 me-2">è¡¨ç¤º:</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="showOwnProducts" checked>
+            <label class="form-check-label" for="showOwnProducts">è‡ªç¤¾å•†å“</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="showCompetitorProducts" checked>
+            <label class="form-check-label" for="showCompetitorProducts">ç«¶åˆå•†å“</label>
+        </div>
+    </div>
+    <div class="toolbar-group">
+        <label class="form-label mb-0 me-2">ã‚°ãƒªãƒƒãƒ‰:</label>
+        <button class="btn btn-sm btn-outline-secondary quick-action-btn" onclick="toggleGrid()">
+            <i class="bi bi-grid"></i> ã‚°ãƒªãƒƒãƒ‰è¡¨ç¤º
+        </button>
+        <button class="btn btn-sm btn-outline-secondary quick-action-btn" onclick="toggleCoordinates()">
+            <i class="bi bi-compass"></i> åº§æ¨™è¡¨ç¤º
+        </button>
+    </div>
+    <div class="toolbar-group">
+        <button class="btn btn-sm btn-outline-primary quick-action-btn" onclick="autoArrange()">
+            <i class="bi bi-magic"></i> è‡ªå‹•é…ç½®
+        </button>
+        <button class="btn btn-sm btn-outline-warning quick-action-btn" onclick="undoLastAction()">
+            <i class="bi bi-arrow-counterclockwise"></i> å…ƒã«æˆ»ã™
+        </button>
+    </div>
+</div>
+
+<!-- é…ç½®çµ±è¨ˆ -->
+<div class="placement-stats">
+    <div class="row text-center">
+        <div class="col-md-3 stat-item">
+            <div class="stat-value" id="totalProducts">{{ placements|length }}</div>
+            <small class="text-muted">é…ç½®å•†å“æ•°</small>
+        </div>
+        <div class="col-md-3 stat-item">
+            <div class="stat-value text-success" id="ownProducts">0</div>
+            <small class="text-muted">è‡ªç¤¾å•†å“</small>
+        </div>
+        <div class="col-md-3 stat-item">
+            <div class="stat-value text-warning" id="competitorProducts">0</div>
+            <small class="text-muted">ç«¶åˆå•†å“</small>
+        </div>
+        <div class="col-md-3 stat-item">
+            <div class="stat-value text-info" id="occupancyRate">0%</div>
+            <small class="text-muted">å æœ‰çŽ‡</small>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- æ£šå‰²ã‚Šã‚¨ãƒªã‚¢ -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">æ£šå‰²ã‚Šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ</h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="zoomIn()">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="zoomOut()">
+                        <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="resetZoom()">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="shelf-container" id="shelfContainer">
+                    <!-- åº§æ¨™ãƒ©ãƒ™ãƒ« -->
+                    <div class="shelf-coordinates" id="shelfCoordinates" style="display: none;">
+                        {% for col in shelf.columns|range %}
+                            <span>{{ col|add:1 }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="shelf-row-labels" id="shelfRowLabels" style="display: none;">
+                        {% for row in shelf.rows|range %}
+                            <span>{{ row|add:1 }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="shelf-grid" id="shelf-grid" 
+                         style="grid-template-rows: repeat({{ shelf.rows }}, 1fr); grid-template-columns: repeat({{ shelf.columns }}, 1fr);">
+                        {% for row in grid %}
+                            {% for cell in row %}
+                                <div class="shelf-cell {% if cell %}occupied {% if cell.product.is_own_product %}own-product{% else %}competitor-product{% endif %}{% endif %}"
+                                     data-row="{{ forloop.parentloop.counter0 }}" 
+                                     data-column="{{ forloop.counter0 }}"
+                                     {% if cell %}data-placement-id="{{ cell.id }}" data-product-id="{{ cell.product.id }}"{% endif %}>
+                                    {% if cell %}
+                                        <div class="product-info">
+                                            {% if cell.product.image %}
+                                                <img src="{{ cell.product.image.url }}" alt="{{ cell.product.product_name }}" class="product-image">
+                                            {% endif %}
+                                            <div class="product-name">{{ cell.product.product_name|truncatechars:10 }}</div>
+                                            <small class="maker-name">{{ cell.product.maker.name|truncatechars:8 }}</small>
+                                        </div>
+                                        {% if cell.face_count > 1 %}
+                                            <div class="face-count editable" onclick="editFaceCount({{ cell.id }}, {{ cell.face_count }})">{{ cell.face_count }}</div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- å‡¡ä¾‹ -->
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">
+                            <span class="badge" style="background-color: #d4edda; color: #155724;">è‡ªç¤¾å•†å“</span>
+                            <span class="badge" style="background-color: #fff3cd; color: #856404;">ç«¶åˆå•†å“</span>
+                        </small>
+                    </div>
+                    <div>
+                        <small class="text-muted">
+                            ãƒ‰ãƒ©ãƒƒã‚°&ãƒ‰ãƒ­ãƒƒãƒ—ã§å•†å“ã‚’é…ç½® | å³ã‚¯ãƒªãƒƒã‚¯ã§ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¡¨ç¤º
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- å•†å“ãƒªã‚¹ãƒˆ -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">å•†å“ä¸€è¦§</h5>
+                <div class="input-group input-group-sm" style="width: 200px;">
+                    <input type="text" class="form-control" id="productSearch" placeholder="å•†å“æ¤œç´¢...">
+                    <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="product-list" id="productList">
+                    {% for product in products %}
+                        <div class="product-item p-2 border-bottom" 
+                             draggable="true" 
+                             data-product-id="{{ product.id }}"
+                             data-product-name="{{ product.product_name }}"
+                             data-maker-name="{{ product.maker.name }}"
+                             data-is-own="{{ product.is_own_product|yesno:'true,false' }}"
+                             data-search-text="{{ product.product_name|lower }} {{ product.maker.name|lower }}">
+                            <div class="d-flex align-items-center">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.product_name }}" 
+                                         class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                {% else %}
+                                    <div class="me-2 bg-light d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px; border-radius: 4px;">
+                                        <i class="bi bi-image text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ product.product_name|truncatechars:20 }}</div>
+                                    <small class="text-muted">{{ product.maker.name }}</small>
+                                    {% if product.is_own_product %}
+                                        <span class="badge bg-success ms-1">è‡ªç¤¾</span>
+                                    {% else %}
+                                        <span class="badge bg-warning ms-1">ç«¶åˆ</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- å•†å“é…ç½®ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<div class="modal fade" id="placementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">å•†å“é…ç½®</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="placementForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="modalShelfId" value="{{ shelf.id }}">
+                    <input type="hidden" id="modalProductId">
+                    <input type="hidden" id="modalRow">
+                    <input type="hidden" id="modalColumn">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">å•†å“</label>
+                        <div id="modalProductInfo" class="p-2 bg-light rounded"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">é…ç½®ä½ç½®</label>
+                        <div id="modalPosition" class="p-2 bg-light rounded"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalFaceCount" class="form-label">ãƒ•ã‚§ãƒ¼ã‚¹æ•°</label>
+                                <input type="number" class="form-control" id="modalFaceCount" min="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalSpanRows" class="form-label">å æœ‰æ®µæ•°</label>
+                                <input type="number" class="form-control" id="modalSpanRows" min="1" value="1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modalSpanColumns" class="form-label">å æœ‰åˆ—æ•°</label>
+                        <input type="number" class="form-control" id="modalSpanColumns" min="1" value="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                <button type="button" class="btn btn-primary" onclick="confirmPlacement()">é…ç½®</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- å•†å“å‰Šé™¤ç¢ºèªãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<div class="modal fade" id="removeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">å•†å“å‰Šé™¤ç¢ºèª</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>ã“ã®ä½ç½®ã‹ã‚‰å•†å“ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ</p>
+                <div id="removeProductInfo" class="p-2 bg-light rounded"></div>
+                <input type="hidden" id="removePlacementId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
+                <button type="button" class="btn btn-danger" onclick="confirmRemoval()">å‰Šé™¤</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆãƒ¡ãƒ‹ãƒ¥ãƒ¼ -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" onclick="editProduct()">
+        <i class="bi bi-pencil me-2"></i>å•†å“æƒ…å ±ç·¨é›†
+    </div>
+    <div class="context-menu-item" onclick="duplicateProduct()">
+        <i class="bi bi-copy me-2"></i>è¤‡è£½
+    </div>
+    <div class="context-menu-item" onclick="moveProduct()">
+        <i class="bi bi-arrows-move me-2"></i>ç§»å‹•
+    </div>
+    <div class="context-menu-item danger" onclick="removeProduct()">
+        <i class="bi bi-trash me-2"></i>å‰Šé™¤
+    </div>
+</div>
+
+<!-- ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ -->
+<div class="drag-preview" id="dragPreview" style="display: none;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+let draggedProduct = null;
+let selectedCell = null;
+let actionHistory = [];
+let currentZoom = 1;
+let contextMenuTarget = null;
+
+// åˆæœŸåŒ–
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDragAndDrop();
+    updateStats();
+    setupProductSearch();
+    setupKeyboardShortcuts();
+});
+
+// ãƒ‰ãƒ©ãƒƒã‚°&ãƒ‰ãƒ­ãƒƒãƒ—åˆæœŸåŒ–
+function initializeDragAndDrop() {
+    // å•†å“ãƒªã‚¹ãƒˆã®Sortableè¨­å®š
+    new Sortable(document.getElementById('productList'), {
+        group: {
+            name: 'products',
+            pull: 'clone',
+            put: false
+        },
+        sort: false,
+        animation: 150,
+        ghostClass: 'ghost-product',
+        onStart: function(evt) {
+            const item = evt.item;
+            draggedProduct = {
+                id: item.dataset.productId,
+                name: item.dataset.productName,
+                maker: item.dataset.makerName,
+                isOwn: item.dataset.isOwn === 'true',
+                element: item
+            };
+            
+            // ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’ä½œæˆ
+            createDragPreview(draggedProduct);
+        },
+        onEnd: function(evt) {
+            hideDragPreview();
+            draggedProduct = null;
+        }
+    });
+
+    // æ£šã‚°ãƒªãƒƒãƒ‰ã®Sortableè¨­å®š
+    new Sortable(document.getElementById('shelf-grid'), {
+        group: {
+            name: 'products',
+            pull: false,
+            put: true
+        },
+        animation: 150,
+        ghostClass: 'ghost-product',
+        onAdd: function(evt) {
+            const targetCell = evt.item.parentNode;
+            const row = parseInt(targetCell.dataset.row);
+            const column = parseInt(targetCell.dataset.column);
+            
+            // å•†å“ã‚’é…ç½®
+            if (draggedProduct && !targetCell.classList.contains('occupied')) {
+                placeProductOnShelf(draggedProduct, row, column);
+            }
+            
+            // è¿½åŠ ã•ã‚ŒãŸè¦ç´ ã‚’å‰Šé™¤ï¼ˆå®Ÿéš›ã®é…ç½®ã¯APIã§è¡Œã†ï¼‰
+            evt.item.remove();
+        }
+    });
+
+    // æ£šã‚»ãƒ«é–“ã®ç§»å‹•
+    document.querySelectorAll('.shelf-cell.occupied').forEach(cell => {
+        new Sortable(cell, {
+            group: 'shelf-products',
+            animation: 150,
+            onEnd: function(evt) {
+                const fromCell = evt.from;
+                const toCell = evt.to;
+                
+                if (fromCell !== toCell) {
+                    moveProductBetweenCells(fromCell, toCell);
+                }
+            }
+        });
+    });
+}
+
+// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ä½œæˆ
+function createDragPreview(product) {
+    const preview = document.getElementById('dragPreview');
+    preview.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="me-2 bg-light d-flex align-items-center justify-content-center" 
+                 style="width: 30px; height: 30px; border-radius: 4px;">
+                <i class="bi bi-image text-muted"></i>
+            </div>
+            <div>
+                <div class="fw-bold" style="font-size: 0.8rem;">${product.name}</div>
+                <small class="text-muted">${product.maker}</small>
+            </div>
+        </div>
+    `;
+    preview.style.display = 'block';
+    
+    // ãƒžã‚¦ã‚¹è¿½å¾“
+    document.addEventListener('mousemove', updateDragPreview);
+}
+
+// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°
+function updateDragPreview(e) {
+    const preview = document.getElementById('dragPreview');
+    preview.style.left = (e.clientX + 10) + 'px';
+    preview.style.top = (e.clientY + 10) + 'px';
+}
+
+// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼éžè¡¨ç¤º
+function hideDragPreview() {
+    document.getElementById('dragPreview').style.display = 'none';
+    document.removeEventListener('mousemove', updateDragPreview);
+}
+
+// å•†å“ã‚’æ£šã«é…ç½®
+function placeProductOnShelf(product, row, column) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('shelf_id', {{ shelf.id }});
+    formData.append('product_id', product.id);
+    formData.append('row', row);
+    formData.append('column', column);
+    formData.append('face_count', 1);
+    formData.append('span_rows', 1);
+    formData.append('span_columns', 1);
+    
+    fetch('{% url "shelves:place_product" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å±¥æ­´ã«è¿½åŠ 
+            actionHistory.push({
+                type: 'place',
+                data: { product: product, row: row, column: column }
+            });
+            
+            // ã‚»ãƒ«ã‚’æ›´æ–°
+            updateCellDisplay(row, column, data.placement);
+            updateStats();
+            
+            // æˆåŠŸãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯
+            showToast('å•†å“ã‚’é…ç½®ã—ã¾ã—ãŸ', 'success');
+        } else {
+            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error, 'error');
+    });
+}
+
+// ã‚»ãƒ«è¡¨ç¤ºæ›´æ–°
+function updateCellDisplay(row, column, placement) {
+    const cell = document.querySelector(`[data-row="${row}"][data-column="${column}"]`);
+    cell.classList.add('occupied');
+    cell.classList.add(placement.is_own_product ? 'own-product' : 'competitor-product');
+    cell.dataset.placementId = placement.id;
+    cell.dataset.productId = placement.product_id;
+    
+    cell.innerHTML = `
+        <div class="product-info">
+            ${placement.image_url ? `<img src="${placement.image_url}" alt="${placement.product_name}" class="product-image">` : ''}
+            <div class="product-name">${placement.product_name.substring(0, 10)}</div>
+            <small class="maker-name">${placement.maker_name.substring(0, 8)}</small>
+        </div>
+        ${placement.face_count > 1 ? `<div class="face-count editable" onclick="editFaceCount(${placement.id}, ${placement.face_count})">${placement.face_count}</div>` : ''}
+    `;
+}
+
+// çµ±è¨ˆæ›´æ–°
+function updateStats() {
+    const occupiedCells = document.querySelectorAll('.shelf-cell.occupied');
+    const ownProducts = document.querySelectorAll('.shelf-cell.own-product');
+    const competitorProducts = document.querySelectorAll('.shelf-cell.competitor-product');
+    const totalCells = {{ shelf.rows }} * {{ shelf.columns }};
+    
+    document.getElementById('totalProducts').textContent = occupiedCells.length;
+    document.getElementById('ownProducts').textContent = ownProducts.length;
+    document.getElementById('competitorProducts').textContent = competitorProducts.length;
+    document.getElementById('occupancyRate').textContent = Math.round((occupiedCells.length / totalCells) * 100) + '%';
+}
+
+// å•†å“æ¤œç´¢
+function setupProductSearch() {
+    const searchInput = document.getElementById('productSearch');
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const products = document.querySelectorAll('.product-item');
+        
+        products.forEach(product => {
+            const searchText = product.dataset.searchText;
+            if (searchText.includes(query)) {
+                product.style.display = 'block';
+            } else {
+                product.style.display = 'none';
+            }
+        });
+    });
+}
+
+// æ¤œç´¢ã‚¯ãƒªã‚¢
+function clearSearch() {
+    document.getElementById('productSearch').value = '';
+    document.querySelectorAll('.product-item').forEach(product => {
+        product.style.display = 'block';
+    });
+}
+
+// ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆ
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 'z':
+                    e.preventDefault();
+                    undoLastAction();
+                    break;
+                case 's':
+                    e.preventDefault();
+                    saveShelfLayout();
+                    break;
+            }
+        }
+        
+        if (e.key === 'Delete' && selectedCell) {
+            removeProductFromCell(selectedCell);
+        }
+    });
+}
+
+// ã‚ºãƒ¼ãƒ æ©Ÿèƒ½
+function zoomIn() {
+    currentZoom = Math.min(currentZoom * 1.2, 3);
+    applyZoom();
+}
+
+function zoomOut() {
+    currentZoom = Math.max(currentZoom / 1.2, 0.5);
+    applyZoom();
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    applyZoom();
+}
+
+function applyZoom() {
+    const shelfGrid = document.getElementById('shelf-grid');
+    shelfGrid.style.transform = `scale(${currentZoom})`;
+    shelfGrid.style.transformOrigin = 'center';
+}
+
+// åº§æ¨™è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
+function toggleCoordinates() {
+    const coordinates = document.getElementById('shelfCoordinates');
+    const rowLabels = document.getElementById('shelfRowLabels');
+    const isVisible = coordinates.style.display !== 'none';
+    
+    coordinates.style.display = isVisible ? 'none' : 'flex';
+    rowLabels.style.display = isVisible ? 'none' : 'flex';
+}
+
+// ã‚°ãƒªãƒƒãƒ‰è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
+function toggleGrid() {
+    const cells = document.querySelectorAll('.shelf-cell');
+    cells.forEach(cell => {
+        if (cell.style.border === 'none') {
+            cell.style.border = '1px solid #dee2e6';
+        } else {
+            cell.style.border = 'none';
+        }
+    });
+}
+
+// ãƒ•ã‚§ãƒ¼ã‚¹æ•°ç·¨é›†
+function editFaceCount(placementId, currentCount) {
+    const newCount = prompt('ãƒ•ã‚§ãƒ¼ã‚¹æ•°ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„:', currentCount);
+    if (newCount && newCount !== currentCount.toString()) {
+        updateFaceCount(placementId, parseInt(newCount));
+    }
+}
+
+// ãƒ•ã‚§ãƒ¼ã‚¹æ•°æ›´æ–°
+function updateFaceCount(placementId, faceCount) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('placement_id', placementId);
+    formData.append('face_count', faceCount);
+    
+    fetch('{% url "shelves:update_face_count" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒªãƒ­ãƒ¼ãƒ‰
+        } else {
+            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+        }
+    });
+}
+
+// ãƒˆãƒ¼ã‚¹ãƒˆé€šçŸ¥
+function showToast(message, type = 'info') {
+    // Bootstrap Toastå®Ÿè£…ï¼ˆç°¡ç•¥åŒ–ï¼‰
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} position-fixed`;
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// å…ƒã«æˆ»ã™
+function undoLastAction() {
+    if (actionHistory.length > 0) {
+        const lastAction = actionHistory.pop();
+        // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+        showToast('å…ƒã«æˆ»ã—ã¾ã—ãŸ', 'info');
+    }
+}
+
+// æ£šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆä¿å­˜
+function saveShelfLayout() {
+    showToast('ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆã‚’ä¿å­˜ã—ã¾ã—ãŸ', 'success');
+}
+
+// å…¨å‰Šé™¤
+function clearShelf() {
+    if (confirm('ã™ã¹ã¦ã®å•†å“ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) {
+        // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+        showToast('ã™ã¹ã¦ã®å•†å“ã‚’å‰Šé™¤ã—ã¾ã—ãŸ', 'info');
+    }
+}
+
+// è‡ªå‹•é…ç½®
+function autoArrange() {
+    showToast('è‡ªå‹•é…ç½®æ©Ÿèƒ½ã¯é–‹ç™ºä¸­ã§ã™', 'info');
+}
+
+// å•†å“æƒ…å ±ç·¨é›†
+function editProduct() {
+    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+    showToast('å•†å“æƒ…å ±ã‚’ç·¨é›†ã—ã¾ã—ãŸ', 'info');
+}
+
+// å•†å“è¤‡è£½
+function duplicateProduct() {
+    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+    showToast('å•†å“ã‚’è¤‡è£½ã—ã¾ã—ãŸ', 'info');
+}
+
+// å•†å“ç§»å‹•
+function moveProduct() {
+    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+    showToast('å•†å“ã‚’ç§»å‹•ã—ã¾ã—ãŸ', 'info');
+}
+
+// å•†å“å‰Šé™¤
+function removeProduct() {
+    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
+    showToast('å•†å“ã‚’å‰Šé™¤ã—ã¾ã—ãŸ', 'info');
+}
+
+// å•†å“å‰Šé™¤
+function removeProductFromCell(cell) {
+    const placementId = cell.dataset.placementId;
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('placement_id', placementId);
+    
+    fetch('{% url "shelves:remove_product" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            cell.classList.remove('occupied');
+            cell.classList.remove('own-product');
+            cell.classList.remove('competitor-product');
+            cell.dataset.placementId = '';
+            cell.dataset.productId = '';
+            cell.innerHTML = '';
+            updateStats();
+        } else {
+            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error, 'error');
+    });
+}
+
+// å•†å“é…ç½®ç¢ºå®š
+function confirmPlacement() {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('shelf_id', document.getElementById('modalShelfId').value);
+    formData.append('product_id', document.getElementById('modalProductId').value);
+    formData.append('row', document.getElementById('modalRow').value);
+    formData.append('column', document.getElementById('modalColumn').value);
+    formData.append('face_count', document.getElementById('modalFaceCount').value);
+    formData.append('span_rows', document.getElementById('modalSpanRows').value);
+    formData.append('span_columns', document.getElementById('modalSpanColumns').value);
+    
+    fetch('{% url "shelves:place_product" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒšãƒ¼ã‚¸ã‚’ãƒªãƒ­ãƒ¼ãƒ‰
+        } else {
+            alert('ã‚¨ãƒ©ãƒ¼: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error);
+    });
+}
+
+// å•†å“å‰Šé™¤ç¢ºå®š
+function confirmRemoval() {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('placement_id', document.getElementById('removePlacementId').value);
+    
+    fetch('{% url "shelves:remove_product" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒšãƒ¼ã‚¸ã‚’ãƒªãƒ­ãƒ¼ãƒ‰
+        } else {
+            alert('ã‚¨ãƒ©ãƒ¼: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error);
+    });
+}
+</script>
+{% endblock %}

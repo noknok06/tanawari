@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}ホーム - 棚割りアプリ{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">棚割りアプリ</h1>
+        <p class="lead">メーカー営業担当向けの棚割り提案ツールです。</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-box-seam display-4 text-primary"></i>
+                <h5 class="card-title mt-2">総商品数</h5>
+                <h2 class="text-primary">{{ total_products }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-star-fill display-4 text-success"></i>
+                <h5 class="card-title mt-2">自社商品</h5>
+                <h2 class="text-success">{{ own_products }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-building display-4 text-warning"></i>
+                <h5 class="card-title mt-2">競合商品</h5>
+                <h2 class="text-warning">{{ competitor_products }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-grid-3x3-gap display-4 text-info"></i>
+                <h5 class="card-title mt-2">棚数</h5>
+                <h2 class="text-info">-</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">最近追加された商品</h5>
+                <a href="{% url 'products:product_list' %}" class="btn btn-sm btn-outline-primary">すべて見る</a>
+            </div>
+            <div class="card-body">
+                {% if recent_products %}
+                    <div class="list-group list-group-flush">
+                        {% for product in recent_products %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ product.product_name }}</h6>
+                                    <small class="text-muted">{{ product.maker.name }}</small>
+                                </div>
+                                {% if product.is_own_product %}
+                                    <span class="badge bg-success">自社</span>
+                                {% else %}
+                                    <span class="badge bg-warning">競合</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">商品がまだ登録されていません。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">クイックアクション</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'products:product_add' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 商品を追加
+                    </a>
+                    <a href="{% url 'shelves:shelf_add' %}" class="btn btn-success">
+                        <i class="bi bi-grid-3x3-gap"></i> 棚を作成
+                    </a>
+                    <a href="{% url 'proposals:proposal_add' %}" class="btn btn-info">
+                        <i class="bi bi-file-earmark-text"></i> 提案を作成
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
