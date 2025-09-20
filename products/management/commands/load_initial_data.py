@@ -1,6 +1,9 @@
+# products/management/commands/load_initial_data.py
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from tanaoroshi.models import Maker, Brand, Category, Customer
+from products.models import Maker, Brand, Category
+from proposals.models import Customer
 
 
 class Command(BaseCommand):
@@ -47,5 +50,24 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'得意先 {customer_name} を作成しました')
 
-        self.stdout.write(self.style.SUCCESS('初期データの投入が完了しました'))
+        # ブランドサンプルデータ
+        brand_data = [
+            ('コカ・コーラ', ['コカ・コーラ', 'ファンタ', 'スプライト']),
+            ('サントリー', ['ボス', 'C.C.レモン', 'なっちゃん']),
+            ('森永製菓', ['チョコボール', 'ハイチュウ', 'ダース']),
+            ('グリコ', ['ポッキー', 'プリッツ', 'ビスコ']),
+        ]
         
+        for maker_name, brands in brand_data:
+            try:
+                maker = Maker.objects.get(name=maker_name)
+                for brand_name in brands:
+                    brand, created = Brand.objects.get_or_create(
+                        maker=maker, name=brand_name
+                    )
+                    if created:
+                        self.stdout.write(f'ブランド {brand_name} を作成しました')
+            except Maker.DoesNotExist:
+                continue
+
+        self.stdout.write(self.style.SUCCESS('初期データの投入が完了しました'))

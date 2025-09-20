@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load range_filter %}
 
-{% block title %}{{ shelf.name }} - æ£šå‰²ã‚Šç·¨é›†{% endblock %}
+{% block title %}{{ shelf.name }} - 棚割り編集{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -11,28 +12,100 @@
     padding: 1rem;
     margin: 1rem 0;
     position: relative;
+    width: 100%;
+    overflow: hidden;
 }
 
 .shelf-grid {
     display: grid;
-    gap: 2px;
-    max-width: 800px;
-    margin: 0 auto;
+    gap: 1px;
+    width: 100%;
+    height: auto;
     position: relative;
+    aspect-ratio: auto;
+}
+
+/* コピーモードのスタイル */
+.copy-mode {
+    cursor: copy !important;
+}
+
+.copy-mode .shelf-cell:not(.occupied) {
+    cursor: copy !important;
+    transition: all 0.2s ease;
+}
+
+.copy-drop-zone-active {
+    border: 2px dashed #198754 !important;
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    transform: scale(1.05);
+}
+
+.copy-drop-zone-active:hover {
+    background-color: rgba(25, 135, 84, 0.2) !important;
+    border-color: #146c43 !important;
+}
+
+/* ドラッグモードのスタイル */
+.dragging-mode {
+    cursor: grabbing !important;
+}
+
+.dragging-mode .shelf-cell:not(.occupied) {
+    cursor: copy !important;
+    transition: all 0.2s ease;
+}
+
+.drop-zone-active {
+    border: 2px dashed #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    transform: scale(1.05);
+}
+
+.drop-zone-active:hover {
+    background-color: rgba(13, 110, 253, 0.2) !important;
+    border-color: #0056b3 !important;
+}
+
+.drag-preview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999 !important;
+    background: white;
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transform: rotate(5deg);
+    opacity: 0.9;
+}
+
+/* セルホバー効果 */
+.shelf-cell.occupied {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: grab;
+}
+
+.shelf-cell.occupied:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .shelf-cell {
     aspect-ratio: 1;
     border: 1px solid #dee2e6;
     background-color: white;
-    border-radius: 3px;
+    border-radius: 2px;
     position: relative;
-    min-height: 60px;
+    min-height: 40px;
+    max-height: 80px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .shelf-cell:hover:not(.occupied) {
@@ -42,8 +115,8 @@
 }
 
 .shelf-cell.occupied {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
     cursor: grab;
 }
 
@@ -74,26 +147,44 @@
 
 .product-info {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    right: 2px;
-    bottom: 2px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 0.7rem;
-    text-align: center;
-    overflow: hidden;
     pointer-events: none;
+    padding: 2px;
 }
 
 .product-image {
-    width: 30px;
-    height: 30px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 2px;
-    margin-bottom: 2px;
+}
+
+.product-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.6rem;
+    padding: 1px 2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.shelf-cell:hover .product-name {
+    opacity: 1;
 }
 
 .face-count {
@@ -110,6 +201,7 @@
     align-items: center;
     justify-content: center;
     z-index: 10;
+    font-weight: bold;
 }
 
 .face-count.editable {
@@ -120,6 +212,18 @@
 .face-count.editable:hover {
     background-color: #0056b3;
     transform: scale(1.1);
+}
+
+.empty-cell-hint {
+    color: #6c757d;
+    font-size: 0.7rem;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.shelf-cell:hover .empty-cell-hint {
+    opacity: 1;
 }
 
 .product-list {
@@ -264,6 +368,36 @@
     background-color: #f8d7da;
     color: #721c24;
 }
+
+.modal-product-item {
+    cursor: pointer;
+}
+
+.product-card {
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+}
+
+.product-card:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.no-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 2px;
+}
 </style>
 {% endblock %}
 
@@ -272,86 +406,94 @@
     <div>
         <h1>{{ shelf.name }}</h1>
         <p class="text-muted mb-0">
-            {{ shelf.width }}Ã—{{ shelf.height }}Ã—{{ shelf.depth }}cm | {{ shelf.rows }}æ®µÃ—{{ shelf.columns }}åˆ—
+            {{ shelf.width }}×{{ shelf.height }}×{{ shelf.depth }}cm | {{ shelf.rows }}段×{{ shelf.columns }}列
         </p>
     </div>
     <div class="btn-group">
         <button class="btn btn-outline-primary" onclick="saveShelfLayout()">
-            <i class="bi bi-save"></i> ä¿å­˜
+            <i class="bi bi-save"></i> 保存
         </button>
         <button class="btn btn-outline-secondary" onclick="clearShelf()">
-            <i class="bi bi-trash"></i> å…¨å‰Šé™¤
+            <i class="bi bi-trash"></i> 全削除
         </button>
         <a href="{% url 'shelves:shelf_edit' shelf.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil"></i> æ£šè¨­å®šç·¨é›†
+            <i class="bi bi-pencil"></i> 棚設定編集
         </a>
         <a href="{% url 'shelves:shelf_list' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> æ£šä¸€è¦§
+            <i class="bi bi-arrow-left"></i> 棚一覧
         </a>
     </div>
 </div>
 
-<!-- ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ -->
+<!-- CSRFトークンの隠しフィールド -->
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
+<!-- ツールバー -->
 <div class="toolbar">
     <div class="toolbar-group">
-        <label class="form-label mb-0 me-2">è¡¨ç¤º:</label>
+        <label class="form-label mb-0 me-2">表示:</label>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="showOwnProducts" checked>
-            <label class="form-check-label" for="showOwnProducts">è‡ªç¤¾å•†å“</label>
+            <label class="form-check-label" for="showOwnProducts">自社商品</label>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="showCompetitorProducts" checked>
-            <label class="form-check-label" for="showCompetitorProducts">ç«¶åˆå•†å“</label>
+            <label class="form-check-label" for="showCompetitorProducts">競合商品</label>
         </div>
     </div>
     <div class="toolbar-group">
-        <label class="form-label mb-0 me-2">ã‚°ãƒªãƒƒãƒ‰:</label>
+        <label class="form-label mb-0 me-2">グリッド:</label>
         <button class="btn btn-sm btn-outline-secondary quick-action-btn" onclick="toggleGrid()">
-            <i class="bi bi-grid"></i> ã‚°ãƒªãƒƒãƒ‰è¡¨ç¤º
+            <i class="bi bi-grid"></i> グリッド表示
         </button>
         <button class="btn btn-sm btn-outline-secondary quick-action-btn" onclick="toggleCoordinates()">
-            <i class="bi bi-compass"></i> åº§æ¨™è¡¨ç¤º
+            <i class="bi bi-compass"></i> 座標表示
         </button>
     </div>
     <div class="toolbar-group">
         <button class="btn btn-sm btn-outline-primary quick-action-btn" onclick="autoArrange()">
-            <i class="bi bi-magic"></i> è‡ªå‹•é…ç½®
+            <i class="bi bi-magic"></i> 自動配置
         </button>
         <button class="btn btn-sm btn-outline-warning quick-action-btn" onclick="undoLastAction()">
-            <i class="bi bi-arrow-counterclockwise"></i> å…ƒã«æˆ»ã™
+            <i class="bi bi-arrow-counterclockwise"></i> 元に戻す
         </button>
     </div>
 </div>
 
-<!-- é…ç½®çµ±è¨ˆ -->
+<!-- 配置統計 -->
 <div class="placement-stats">
     <div class="row text-center">
         <div class="col-md-3 stat-item">
             <div class="stat-value" id="totalProducts">{{ placements|length }}</div>
-            <small class="text-muted">é…ç½®å•†å“æ•°</small>
+            <small class="text-muted">配置商品数</small>
         </div>
         <div class="col-md-3 stat-item">
             <div class="stat-value text-success" id="ownProducts">0</div>
-            <small class="text-muted">è‡ªç¤¾å•†å“</small>
+            <small class="text-muted">自社商品</small>
         </div>
         <div class="col-md-3 stat-item">
             <div class="stat-value text-warning" id="competitorProducts">0</div>
-            <small class="text-muted">ç«¶åˆå•†å“</small>
+            <small class="text-muted">競合商品</small>
         </div>
         <div class="col-md-3 stat-item">
             <div class="stat-value text-info" id="occupancyRate">0%</div>
-            <small class="text-muted">å æœ‰çŽ‡</small>
+            <small class="text-muted">占有率</small>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- æ£šå‰²ã‚Šã‚¨ãƒªã‚¢ -->
-    <div class="col-md-8">
+<div class="row" id="mainLayout">
+    <!-- 棚割りエリア -->
+    <div class="col-12" id="shelfArea">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">æ£šå‰²ã‚Šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆ</h5>
+                <h5 class="mb-0">棚割りレイアウト</h5>
                 <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="toggleProductPanel()">
+                        <i class="bi bi-list"></i> 商品一覧
+                    </button>
                     <button class="btn btn-outline-secondary" onclick="zoomIn()">
                         <i class="bi bi-zoom-in"></i>
                     </button>
@@ -363,9 +505,9 @@
                     </button>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-2">
                 <div class="shelf-container" id="shelfContainer">
-                    <!-- åº§æ¨™ãƒ©ãƒ™ãƒ« -->
+                    <!-- 座標ラベル -->
                     <div class="shelf-coordinates" id="shelfCoordinates" style="display: none;">
                         {% for col in shelf.columns|range %}
                             <span>{{ col|add:1 }}</span>
@@ -384,18 +526,29 @@
                                 <div class="shelf-cell {% if cell %}occupied {% if cell.product.is_own_product %}own-product{% else %}competitor-product{% endif %}{% endif %}"
                                      data-row="{{ forloop.parentloop.counter0 }}" 
                                      data-column="{{ forloop.counter0 }}"
-                                     {% if cell %}data-placement-id="{{ cell.id }}" data-product-id="{{ cell.product.id }}"{% endif %}>
+                                     {% if cell %}data-placement-id="{{ cell.id }}" data-product-id="{{ cell.product.id }}"{% endif %}
+                                     ondblclick="handleCellDoubleClick(this)"
+                                     onclick="handleCellClick(this)"
+                                     {% if cell %}oncontextmenu="handleCellRightClick(event, this)"{% endif %}>
                                     {% if cell %}
                                         <div class="product-info">
                                             {% if cell.product.image %}
                                                 <img src="{{ cell.product.image.url }}" alt="{{ cell.product.product_name }}" class="product-image">
+                                            {% else %}
+                                                <div class="no-image-placeholder">
+                                                    <i class="bi bi-image" style="font-size: 1.5rem; color: #dee2e6;"></i>
+                                                </div>
                                             {% endif %}
-                                            <div class="product-name">{{ cell.product.product_name|truncatechars:10 }}</div>
-                                            <small class="maker-name">{{ cell.product.maker.name|truncatechars:8 }}</small>
+                                            <div class="product-name">{{ cell.product.product_name|truncatechars:15 }}</div>
                                         </div>
                                         {% if cell.face_count > 1 %}
-                                            <div class="face-count editable" onclick="editFaceCount({{ cell.id }}, {{ cell.face_count }})">{{ cell.face_count }}</div>
+                                            <div class="face-count editable" onclick="editFaceCount({{ cell.id }}, {{ cell.face_count }}); event.stopPropagation();">{{ cell.face_count }}</div>
                                         {% endif %}
+                                    {% else %}
+                                        <div class="empty-cell-hint">
+                                            <i class="bi bi-plus-circle"></i><br>
+                                            <span style="font-size: 0.6rem;">クリック/ダブルクリック</span>
+                                        </div>
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -403,83 +556,177 @@
                     </div>
                 </div>
                 
-                <!-- å‡¡ä¾‹ -->
-                <div class="mt-3 d-flex justify-content-between align-items-center">
+                <!-- 凡例とヘルプ -->
+                <div class="mt-2 d-flex justify-content-between align-items-center">
                     <div>
                         <small class="text-muted">
-                            <span class="badge" style="background-color: #d4edda; color: #155724;">è‡ªç¤¾å•†å“</span>
-                            <span class="badge" style="background-color: #fff3cd; color: #856404;">ç«¶åˆå•†å“</span>
+                            <span class="badge" style="background-color: #d4edda; color: #155724;">自社商品</span>
+                            <span class="badge" style="background-color: #fff3cd; color: #856404;">競合商品</span>
                         </small>
                     </div>
-                    <div>
+                    <div id="helpText">
                         <small class="text-muted">
-                            ãƒ‰ãƒ©ãƒƒã‚°&ãƒ‰ãƒ­ãƒƒãƒ—ã§å•†å“ã‚’é…ç½® | å³ã‚¯ãƒªãƒƒã‚¯ã§ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¡¨ç¤º
+                            商品一覧ボタン → ドラッグ&ドロップ | セルをドラッグでコピー | ダブルクリックで選択
                         </small>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- å•†å“ãƒªã‚¹ãƒˆ -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">å•†å“ä¸€è¦§</h5>
-                <div class="input-group input-group-sm" style="width: 200px;">
-                    <input type="text" class="form-control" id="productSearch" placeholder="å•†å“æ¤œç´¢...">
-                    <button class="btn btn-outline-secondary" onclick="clearSearch()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="product-list" id="productList">
-                    {% for product in products %}
-                        <div class="product-item p-2 border-bottom" 
-                             draggable="true" 
-                             data-product-id="{{ product.id }}"
-                             data-product-name="{{ product.product_name }}"
-                             data-maker-name="{{ product.maker.name }}"
-                             data-is-own="{{ product.is_own_product|yesno:'true,false' }}"
-                             data-search-text="{{ product.product_name|lower }} {{ product.maker.name|lower }}">
-                            <div class="d-flex align-items-center">
-                                {% if product.image %}
-                                    <img src="{{ product.image.url }}" alt="{{ product.product_name }}" 
-                                         class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
-                                {% else %}
-                                    <div class="me-2 bg-light d-flex align-items-center justify-content-center" 
-                                         style="width: 40px; height: 40px; border-radius: 4px;">
-                                        <i class="bi bi-image text-muted"></i>
-                                    </div>
-                                {% endif %}
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">{{ product.product_name|truncatechars:20 }}</div>
-                                    <small class="text-muted">{{ product.maker.name }}</small>
-                                    {% if product.is_own_product %}
-                                        <span class="badge bg-success ms-1">è‡ªç¤¾</span>
-                                    {% else %}
-                                        <span class="badge bg-warning ms-1">ç«¶åˆ</span>
-                                    {% endif %}
-                                </div>
-                                <div class="text-muted">
-                                    <i class="bi bi-grip-vertical"></i>
-                                </div>
-                            </div>
+                
+                <!-- ドラッグモード中のヘルプ（非表示） -->
+                <div id="dragModeHelp" class="alert alert-info mt-2" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <div>
+                            <strong>ドラッグモード</strong>: 
+                            空いているセルをクリックして商品を配置 | 
+                            <kbd>Esc</kbd>でキャンセル
                         </div>
-                    {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- コピーモード中のヘルプ（非表示） -->
+                <div id="copyModeHelp" class="alert alert-success mt-2" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-copy me-2"></i>
+                        <div>
+                            <strong>コピーモード</strong>: 
+                            空いているセルをクリックして商品をコピー配置 | 
+                            <kbd>Esc</kbd>でキャンセル
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- å•†å“é…ç½®ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<!-- 商品リストパネル（サイドパネル） -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="productPanel" style="width: 400px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">商品一覧</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div class="p-3 border-bottom">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="productSearch" placeholder="商品検索...">
+                <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>
+        <div class="product-list" id="productList" style="height: calc(100vh - 200px); overflow-y: auto;">
+            {% for product in products %}
+                <div class="product-item p-2 border-bottom" 
+                     draggable="true" 
+                     data-product-id="{{ product.id }}"
+                     data-product-name="{{ product.product_name }}"
+                     data-maker-name="{{ product.maker.name }}"
+                     data-is-own="{{ product.is_own_product|yesno:'true,false' }}"
+                     data-search-text="{{ product.product_name|lower }} {{ product.maker.name|lower }}">
+                    <div class="d-flex align-items-center">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.product_name }}" 
+                                 class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        {% else %}
+                            <div class="me-2 bg-light d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px; border-radius: 4px;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <div class="fw-bold" style="font-size: 0.9rem;">{{ product.product_name|truncatechars:25 }}</div>
+                            <small class="text-muted">{{ product.maker.name }}</small>
+                            {% if product.is_own_product %}
+                                <span class="badge bg-success ms-1">自社</span>
+                            {% else %}
+                                <span class="badge bg-warning ms-1">競合</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 商品選択モーダル -->
+<div class="modal fade" id="productSelectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">商品を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" id="modalProductSearch" placeholder="商品名、メーカー名で検索...">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="modalCategoryFilter">
+                                <option value="">すべてのカテゴリ</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row" id="modalProductList" style="max-height: 400px; overflow-y: auto;">
+                    {% for product in products %}
+                        <div class="col-md-6 col-lg-4 mb-3 modal-product-item" 
+                             data-product-id="{{ product.id }}"
+                             data-product-name="{{ product.product_name }}"
+                             data-maker-name="{{ product.maker.name }}"
+                             data-category-id="{{ product.category.id }}"
+                             data-is-own="{{ product.is_own_product|yesno:'true,false' }}"
+                             data-search-text="{{ product.product_name|lower }} {{ product.maker.name|lower }}"
+                             onclick="selectProductFromModal(this)">
+                            <div class="card h-100 product-card">
+                                <div class="card-body p-2 text-center">
+                                    {% if product.image %}
+                                        <img src="{{ product.image.url }}" alt="{{ product.product_name }}" 
+                                             class="img-fluid mb-2" style="height: 80px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light d-flex align-items-center justify-content-center mb-2" 
+                                             style="height: 80px;">
+                                            <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                                        </div>
+                                    {% endif %}
+                                    <h6 class="card-title mb-1" style="font-size: 0.8rem;">{{ product.product_name|truncatechars:20 }}</h6>
+                                    <small class="text-muted d-block">{{ product.maker.name }}</small>
+                                    {% if product.is_own_product %}
+                                        <span class="badge bg-success">自社</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">競合</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <input type="hidden" id="modalTargetRow">
+                <input type="hidden" id="modalTargetColumn">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 商品配置モーダル -->
 <div class="modal fade" id="placementModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">å•†å“é…ç½®</h5>
+                <h5 class="modal-title">商品配置</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -491,82 +738,82 @@
                     <input type="hidden" id="modalColumn">
                     
                     <div class="mb-3">
-                        <label class="form-label">å•†å“</label>
+                        <label class="form-label">商品</label>
                         <div id="modalProductInfo" class="p-2 bg-light rounded"></div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">é…ç½®ä½ç½®</label>
+                        <label class="form-label">配置位置</label>
                         <div id="modalPosition" class="p-2 bg-light rounded"></div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="modalFaceCount" class="form-label">ãƒ•ã‚§ãƒ¼ã‚¹æ•°</label>
+                                <label for="modalFaceCount" class="form-label">フェース数</label>
                                 <input type="number" class="form-control" id="modalFaceCount" min="1" value="1">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="modalSpanRows" class="form-label">å æœ‰æ®µæ•°</label>
+                                <label for="modalSpanRows" class="form-label">占有段数</label>
                                 <input type="number" class="form-control" id="modalSpanRows" min="1" value="1">
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="modalSpanColumns" class="form-label">å æœ‰åˆ—æ•°</label>
+                        <label for="modalSpanColumns" class="form-label">占有列数</label>
                         <input type="number" class="form-control" id="modalSpanColumns" min="1" value="1">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
-                <button type="button" class="btn btn-primary" onclick="confirmPlacement()">é…ç½®</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="confirmPlacement()">配置</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- å•†å“å‰Šé™¤ç¢ºèªãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<!-- 商品削除確認モーダル -->
 <div class="modal fade" id="removeModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">å•†å“å‰Šé™¤ç¢ºèª</h5>
+                <h5 class="modal-title">商品削除確認</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>ã“ã®ä½ç½®ã‹ã‚‰å•†å“ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ</p>
+                <p>この位置から商品を削除しますか？</p>
                 <div id="removeProductInfo" class="p-2 bg-light rounded"></div>
                 <input type="hidden" id="removePlacementId">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
-                <button type="button" class="btn btn-danger" onclick="confirmRemoval()">å‰Šé™¤</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-danger" onclick="confirmRemoval()">削除</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆãƒ¡ãƒ‹ãƒ¥ãƒ¼ -->
+<!-- コンテキストメニュー -->
 <div class="context-menu" id="contextMenu">
     <div class="context-menu-item" onclick="editProduct()">
-        <i class="bi bi-pencil me-2"></i>å•†å“æƒ…å ±ç·¨é›†
+        <i class="bi bi-pencil me-2"></i>商品情報編集
     </div>
     <div class="context-menu-item" onclick="duplicateProduct()">
-        <i class="bi bi-copy me-2"></i>è¤‡è£½
+        <i class="bi bi-copy me-2"></i>複製
     </div>
     <div class="context-menu-item" onclick="moveProduct()">
-        <i class="bi bi-arrows-move me-2"></i>ç§»å‹•
+        <i class="bi bi-arrows-move me-2"></i>移動
     </div>
     <div class="context-menu-item danger" onclick="removeProduct()">
-        <i class="bi bi-trash me-2"></i>å‰Šé™¤
+        <i class="bi bi-trash me-2"></i>削除
     </div>
 </div>
 
-<!-- ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ -->
+<!-- ドラッグプレビュー -->
 <div class="drag-preview" id="dragPreview" style="display: none;"></div>
 {% endblock %}
 
@@ -579,18 +826,35 @@ let actionHistory = [];
 let currentZoom = 1;
 let contextMenuTarget = null;
 
-// åˆæœŸåŒ–
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDragAndDrop();
-    updateStats();
-    setupProductSearch();
-    setupKeyboardShortcuts();
-});
+// 商品パネルの表示切り替え
+function toggleProductPanel() {
+    const productPanel = document.getElementById('productPanel');
+    const offcanvas = new bootstrap.Offcanvas(productPanel);
+    offcanvas.show();
+    
+    // オフキャンバス表示後にドラッグ&ドロップを再初期化
+    productPanel.addEventListener('shown.bs.offcanvas', function() {
+        console.log('Offcanvas shown, reinitializing drag and drop');
+        initializeProductListDragDrop();
+    }, { once: true });
+}
 
-// ãƒ‰ãƒ©ãƒƒã‚°&ãƒ‰ãƒ­ãƒƒãƒ—åˆæœŸåŒ–
-function initializeDragAndDrop() {
-    // å•†å“ãƒªã‚¹ãƒˆã®Sortableè¨­å®š
-    new Sortable(document.getElementById('productList'), {
+// 商品リスト専用のドラッグ&ドロップ初期化
+function initializeProductListDragDrop() {
+    const productListElement = document.getElementById('productList');
+    
+    if (!productListElement) {
+        console.warn('Product list element not found');
+        return;
+    }
+    
+    // 既存のSortableがあれば破棄
+    if (productListElement.sortable) {
+        productListElement.sortable.destroy();
+    }
+    
+    // 新しいSortableを作成
+    const sortable = new Sortable(productListElement, {
         group: {
             name: 'products',
             pull: 'clone',
@@ -609,17 +873,181 @@ function initializeDragAndDrop() {
                 element: item
             };
             
-            // ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ã‚’ä½œæˆ
+            console.log('Drag started from offcanvas:', draggedProduct);
+            
+            // offcanvasを閉じる
+            const offcanvasElement = document.getElementById('productPanel');
+            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (offcanvasInstance) {
+                offcanvasInstance.hide();
+            }
+            
+            // ドラッグプレビューを作成
             createDragPreview(draggedProduct);
+            
+            // ドラッグモードを有効にする
+            document.body.classList.add('dragging-mode');
+            
+            // セルにドロップゾーンのスタイルを追加
+            document.querySelectorAll('.shelf-cell:not(.occupied)').forEach(cell => {
+                cell.classList.add('drop-zone-active');
+            });
         },
         onEnd: function(evt) {
+            console.log('Drag ended');
             hideDragPreview();
-            draggedProduct = null;
+            
+            // ドラッグモードを無効にする
+            document.body.classList.remove('dragging-mode');
+            
+            // ドロップゾーンのスタイルを削除
+            document.querySelectorAll('.shelf-cell').forEach(cell => {
+                cell.classList.remove('drop-zone-active');
+            });
+            
+            // draggedProductをリセット（少し遅延を入れる）
+            setTimeout(() => {
+                draggedProduct = null;
+            }, 100);
         }
     });
+    
+    // Sortableインスタンスを保存
+    productListElement.sortable = sortable;
+    
+    console.log('Product list drag and drop initialized');
+}
 
-    // æ£šã‚°ãƒªãƒƒãƒ‰ã®Sortableè¨­å®š
-    new Sortable(document.getElementById('shelf-grid'), {
+// 初期化
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDragAndDrop();
+    updateStats();
+    setupProductSearch();
+    setupKeyboardShortcuts();
+    setupModalProductSearch();
+    adjustShelfLayout();
+    
+    // 初期状態で商品リストのドラッグ&ドロップを有効化
+    initializeProductListDragDrop();
+});
+
+// 棚レイアウトの調整
+function adjustShelfLayout() {
+    const container = document.getElementById('shelfContainer');
+    const grid = document.getElementById('shelf-grid');
+    
+    if (!container || !grid) return;
+    
+    // コンテナの幅に合わせてセルサイズを調整
+    function resizeGrid() {
+        const containerWidth = container.offsetWidth - 32; // パディング分を引く
+        const columns = {{ shelf.columns }};
+        const rows = {{ shelf.rows }};
+        
+        // セルサイズを計算（最小40px、最大100px）
+        const cellSize = Math.min(Math.max(containerWidth / columns - 2, 40), 100);
+        
+        grid.style.gridTemplateColumns = `repeat(${columns}, ${cellSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+        
+        console.log('Grid resized:', { containerWidth, cellSize, columns, rows });
+    }
+    
+    // 初期サイズ設定
+    resizeGrid();
+    
+    // ウィンドウリサイズ時に再調整
+    window.addEventListener('resize', resizeGrid);
+}
+
+// セルダブルクリックハンドラー
+function handleCellDoubleClick(cell) {
+    const row = parseInt(cell.dataset.row);
+    const column = parseInt(cell.dataset.column);
+    
+    console.log('Cell double-clicked:', { row, column, occupied: cell.classList.contains('occupied') });
+    
+    // 既に商品が配置されている場合は何もしない
+    if (cell.classList.contains('occupied')) {
+        return;
+    }
+    
+    // モーダルのターゲット位置を設定
+    document.getElementById('modalTargetRow').value = row;
+    document.getElementById('modalTargetColumn').value = column;
+    
+    // モーダルを開く
+    const modal = new bootstrap.Modal(document.getElementById('productSelectModal'));
+    modal.show();
+}
+
+// モーダル内商品検索の設定
+function setupModalProductSearch() {
+    const searchInput = document.getElementById('modalProductSearch');
+    const categoryFilter = document.getElementById('modalCategoryFilter');
+    
+    if (!searchInput || !categoryFilter) {
+        console.warn('Modal search elements not found');
+        return;
+    }
+    
+    function filterModalProducts() {
+        const searchQuery = searchInput.value.toLowerCase();
+        const selectedCategory = categoryFilter.value;
+        const products = document.querySelectorAll('.modal-product-item');
+        
+        products.forEach(product => {
+            const searchText = product.dataset.searchText || '';
+            const categoryId = product.dataset.categoryId || '';
+            
+            const matchesSearch = !searchQuery || searchText.includes(searchQuery);
+            const matchesCategory = !selectedCategory || categoryId === selectedCategory;
+            
+            if (matchesSearch && matchesCategory) {
+                product.style.display = 'block';
+            } else {
+                product.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterModalProducts);
+    categoryFilter.addEventListener('change', filterModalProducts);
+}
+
+// モーダルから商品を選択
+function selectProductFromModal(productElement) {
+    const productData = {
+        id: productElement.dataset.productId,
+        name: productElement.dataset.productName,
+        maker: productElement.dataset.makerName,
+        isOwn: productElement.dataset.isOwn === 'true'
+    };
+    
+    const row = parseInt(document.getElementById('modalTargetRow').value);
+    const column = parseInt(document.getElementById('modalTargetColumn').value);
+    
+    console.log('Product selected from modal:', { productData, row, column });
+    
+    // モーダルを閉じる
+    const modal = bootstrap.Modal.getInstance(document.getElementById('productSelectModal'));
+    modal.hide();
+    
+    // 商品を配置
+    placeProductOnShelf(productData, row, column);
+}
+
+// ドラッグ&ドロップ初期化（棚グリッドのみ）
+function initializeDragAndDrop() {
+    // 棚グリッドのSortable設定
+    const shelfGridElement = document.getElementById('shelf-grid');
+    
+    if (!shelfGridElement) {
+        console.warn('Shelf grid element not found');
+        return;
+    }
+    
+    new Sortable(shelfGridElement, {
         group: {
             name: 'products',
             pull: false,
@@ -628,38 +1056,228 @@ function initializeDragAndDrop() {
         animation: 150,
         ghostClass: 'ghost-product',
         onAdd: function(evt) {
-            const targetCell = evt.item.parentNode;
+            console.log('Drop event triggered on shelf grid');
+            
+            // ドロップされた要素を削除（実際の配置はAPIで行う）
+            evt.item.remove();
+            
+            // ドロップ先のセルを特定
+            let targetCell = evt.to;
+            
+            // もしグリッド自体にドロップされた場合、最も近いセルを見つける
+            if (targetCell.id === 'shelf-grid') {
+                const cells = targetCell.querySelectorAll('.shelf-cell');
+                
+                if (!evt.originalEvent) {
+                    console.error('Original event not found');
+                    showToast('ドロップ位置を特定できません', 'error');
+                    return;
+                }
+                
+                const mousePos = { x: evt.originalEvent.clientX, y: evt.originalEvent.clientY };
+                let closestCell = null;
+                let minDistance = Infinity;
+                
+                cells.forEach(cell => {
+                    const rect = cell.getBoundingClientRect();
+                    const cellCenter = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+                    const distance = Math.sqrt(
+                        Math.pow(mousePos.x - cellCenter.x, 2) + 
+                        Math.pow(mousePos.y - cellCenter.y, 2)
+                    );
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCell = cell;
+                    }
+                });
+                
+                targetCell = closestCell;
+            }
+            
+            if (!targetCell || !targetCell.dataset) {
+                console.error('Invalid target cell');
+                showToast('無効なドロップ先です', 'error');
+                return;
+            }
+            
             const row = parseInt(targetCell.dataset.row);
             const column = parseInt(targetCell.dataset.column);
             
-            // å•†å“ã‚’é…ç½®
-            if (draggedProduct && !targetCell.classList.contains('occupied')) {
-                placeProductOnShelf(draggedProduct, row, column);
+            console.log('Target cell data:', { 
+                row: targetCell.dataset.row, 
+                column: targetCell.dataset.column,
+                parsed: { row, column }
+            });
+            
+            // 値の検証
+            if (isNaN(row) || isNaN(column)) {
+                console.error('Invalid row/column values:', { row, column });
+                showToast('無効な配置位置です', 'error');
+                return;
             }
             
-            // è¿½åŠ ã•ã‚ŒãŸè¦ç´ ã‚’å‰Šé™¤ï¼ˆå®Ÿéš›ã®é…ç½®ã¯APIã§è¡Œã†ï¼‰
-            evt.item.remove();
+            // セルが既に占有されているかチェック
+            if (targetCell.classList.contains('occupied')) {
+                showToast('この位置には既に商品が配置されています', 'error');
+                return;
+            }
+            
+            // 商品を配置
+            if (draggedProduct) {
+                placeProductOnShelf(draggedProduct, row, column);
+            } else {
+                console.error('No dragged product found');
+                showToast('配置する商品が見つかりません', 'error');
+            }
         }
     });
-
-    // æ£šã‚»ãƒ«é–“ã®ç§»å‹•
-    document.querySelectorAll('.shelf-cell.occupied').forEach(cell => {
-        new Sortable(cell, {
-            group: 'shelf-products',
-            animation: 150,
-            onEnd: function(evt) {
-                const fromCell = evt.from;
-                const toCell = evt.to;
-                
-                if (fromCell !== toCell) {
-                    moveProductBetweenCells(fromCell, toCell);
-                }
-            }
-        });
-    });
+    
+    console.log('Shelf grid drag and drop initialized');
+    
+    // 既存セルのドラッグ&ドロップも初期化
+    initializeCellDragDrop();
 }
 
-// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼ä½œæˆ
+// セル間コピー用のドラッグ&ドロップ初期化
+function initializeCellDragDrop() {
+    const occupiedCells = document.querySelectorAll('.shelf-cell.occupied');
+    
+    occupiedCells.forEach(cell => {
+        // 既存のSortableがあれば破棄
+        if (cell.sortable) {
+            cell.sortable.destroy();
+        }
+        
+        const sortable = new Sortable(cell, {
+            group: {
+                name: 'cell-products',
+                pull: 'clone',
+                put: false
+            },
+            sort: false,
+            animation: 150,
+            ghostClass: 'ghost-product',
+            onStart: function(evt) {
+                console.log('Cell drag started');
+                
+                const sourceCell = evt.from;
+                const productId = sourceCell.dataset.productId;
+                const placementId = sourceCell.dataset.placementId;
+                
+                if (!productId) {
+                    console.error('No product ID found in source cell');
+                    return;
+                }
+                
+                // 商品データを取得（既存セルから）
+                const productInfo = sourceCell.querySelector('.product-info');
+                const productName = sourceCell.querySelector('.product-name');
+                const isOwnProduct = sourceCell.classList.contains('own-product');
+                
+                draggedProduct = {
+                    id: productId,
+                    name: productName ? productName.textContent : 'Unknown Product',
+                    maker: 'メーカー', // 実際のメーカー名は別途取得が必要
+                    isOwn: isOwnProduct,
+                    sourceCell: sourceCell,
+                    isCopyMode: true  // コピーモードのフラグ
+                };
+                
+                console.log('Dragged product from cell:', draggedProduct);
+                
+                // コピー用のドラッグプレビューを作成
+                createCopyDragPreview(draggedProduct);
+                
+                // コピーモードを開始
+                startCopyMode();
+            },
+            onEnd: function(evt) {
+                console.log('Cell drag ended');
+                // onEnd時は何もしない（セルクリック時にendCopyModeが呼ばれる）
+            }
+        });
+        
+        // Sortableインスタンスを保存
+        cell.sortable = sortable;
+    });
+    
+    console.log('Cell drag and drop initialized for', occupiedCells.length, 'cells');
+}
+
+// コピーモード開始
+function startCopyMode() {
+    console.log('Starting copy mode');
+    
+    // コピーモードを有効にする
+    document.body.classList.add('copy-mode');
+    
+    // セルにコピー用ドロップゾーンのスタイルを追加
+    document.querySelectorAll('.shelf-cell:not(.occupied)').forEach(cell => {
+        cell.classList.add('copy-drop-zone-active');
+    });
+    
+    // ヘルプメッセージを切り替え
+    const helpText = document.getElementById('helpText');
+    const copyModeHelp = document.getElementById('copyModeHelp');
+    if (helpText) helpText.style.display = 'none';
+    if (copyModeHelp) copyModeHelp.style.display = 'block';
+}
+
+// コピーモード終了
+function endCopyMode() {
+    console.log('Ending copy mode');
+    
+    // コピーモードを無効にする
+    document.body.classList.remove('copy-mode');
+    
+    // ドロップゾーンのスタイルを削除
+    document.querySelectorAll('.shelf-cell').forEach(cell => {
+        cell.classList.remove('copy-drop-zone-active');
+    });
+    
+    // ドラッグプレビューを非表示
+    hideDragPreview();
+    
+    // ヘルプメッセージを元に戻す
+    const helpText = document.getElementById('helpText');
+    const copyModeHelp = document.getElementById('copyModeHelp');
+    if (helpText) helpText.style.display = 'block';
+    if (copyModeHelp) copyModeHelp.style.display = 'none';
+    
+    // draggedProductをリセット
+    draggedProduct = null;
+}
+
+// コピー用ドラッグプレビュー作成
+function createCopyDragPreview(product) {
+    const preview = document.getElementById('dragPreview');
+    preview.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="me-2 bg-success d-flex align-items-center justify-content-center" 
+                 style="width: 30px; height: 30px; border-radius: 4px;">
+                <i class="bi bi-copy text-white"></i>
+            </div>
+            <div>
+                <div class="fw-bold" style="font-size: 0.8rem;">${product.name}</div>
+                <small class="text-success">コピー中...</small>
+            </div>
+        </div>
+        <div class="text-center mt-1">
+            <small class="text-success">空いているセルをクリック</small>
+        </div>
+    `;
+    preview.style.display = 'block';
+    preview.style.borderColor = '#198754';
+    
+    // マウス追従
+    document.addEventListener('mousemove', updateDragPreview);
+}
+
+// ドラッグプレビュー作成
 function createDragPreview(product) {
     const preview = document.getElementById('dragPreview');
     preview.innerHTML = `
@@ -676,104 +1294,202 @@ function createDragPreview(product) {
     `;
     preview.style.display = 'block';
     
-    // ãƒžã‚¦ã‚¹è¿½å¾“
+    // マウス追従
     document.addEventListener('mousemove', updateDragPreview);
 }
 
-// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ›´æ–°
+// ドラッグプレビュー更新
 function updateDragPreview(e) {
     const preview = document.getElementById('dragPreview');
     preview.style.left = (e.clientX + 10) + 'px';
     preview.style.top = (e.clientY + 10) + 'px';
 }
 
-// ãƒ‰ãƒ©ãƒƒã‚°ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼éžè¡¨ç¤º
+// ドラッグプレビュー非表示
 function hideDragPreview() {
     document.getElementById('dragPreview').style.display = 'none';
     document.removeEventListener('mousemove', updateDragPreview);
 }
 
-// å•†å“ã‚’æ£šã«é…ç½®
+// 商品を棚に配置
 function placeProductOnShelf(product, row, column) {
+    // 入力値の検証
+    if (!product || !product.id) {
+        showToast('商品データが無効です', 'error');
+        console.error('Invalid product data:', product);
+        return;
+    }
+    
+    if (typeof row !== 'number' || typeof column !== 'number' || isNaN(row) || isNaN(column)) {
+        showToast('無効な配置位置です', 'error');
+        console.error('Invalid position:', { row, column, product });
+        return;
+    }
+    
+    if (row < 0 || column < 0) {
+        showToast('配置位置が無効です', 'error');
+        console.error('Negative position:', { row, column });
+        return;
+    }
+    
+    // 対象セルの存在確認
+    const targetCell = document.querySelector(`[data-row="${row}"][data-column="${column}"]`);
+    if (!targetCell) {
+        showToast('対象のセルが見つかりません', 'error');
+        console.error('Target cell not found:', { row, column });
+        return;
+    }
+    
+    // セルが既に占有されているかチェック
+    if (targetCell.classList.contains('occupied')) {
+        showToast('この位置には既に商品が配置されています', 'error');
+        console.warn('Cell already occupied:', { row, column });
+        return;
+    }
+    
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     formData.append('shelf_id', {{ shelf.id }});
     formData.append('product_id', product.id);
-    formData.append('row', row);
-    formData.append('column', column);
-    formData.append('face_count', 1);
-    formData.append('span_rows', 1);
-    formData.append('span_columns', 1);
+    formData.append('row', row.toString());
+    formData.append('column', column.toString());
+    formData.append('face_count', '1');
+    formData.append('span_rows', '1');
+    formData.append('span_columns', '1');
+    
+    console.log('Placing product:', { 
+        product_id: product.id,
+        product_name: product.name,
+        row, 
+        column, 
+        shelf_id: {{ shelf.id }} 
+    });
+    
+    // UIを一時的に無効化
+    targetCell.style.opacity = '0.5';
+    targetCell.style.pointerEvents = 'none';
     
     fetch('{% url "shelves:place_product" %}', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('API response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('API Response:', data);
+        
+        // UIを元に戻す
+        targetCell.style.opacity = '';
+        targetCell.style.pointerEvents = '';
+        
         if (data.success) {
-            // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³å±¥æ­´ã«è¿½åŠ 
+            // アクション履歴に追加
             actionHistory.push({
                 type: 'place',
                 data: { product: product, row: row, column: column }
             });
             
-            // ã‚»ãƒ«ã‚’æ›´æ–°
+            // セルを更新
             updateCellDisplay(row, column, data.placement);
             updateStats();
             
-            // æˆåŠŸãƒ•ã‚£ãƒ¼ãƒ‰ãƒãƒƒã‚¯
-            showToast('å•†å“ã‚’é…ç½®ã—ã¾ã—ãŸ', 'success');
+            // 成功フィードバック
+            showToast(`${product.name} を配置しました`, 'success');
         } else {
-            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+            showToast('エラー: ' + data.error, 'error');
+            console.error('Placement error:', data.error);
         }
     })
     .catch(error => {
-        showToast('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error, 'error');
+        // UIを元に戻す
+        targetCell.style.opacity = '';
+        targetCell.style.pointerEvents = '';
+        
+        showToast('ネットワークエラーが発生しました', 'error');
+        console.error('Network error:', error);
     });
 }
 
-// ã‚»ãƒ«è¡¨ç¤ºæ›´æ–°
+// セル表示更新
 function updateCellDisplay(row, column, placement) {
     const cell = document.querySelector(`[data-row="${row}"][data-column="${column}"]`);
+    if (!cell) {
+        console.error('Cell not found:', { row, column });
+        return;
+    }
+    
     cell.classList.add('occupied');
     cell.classList.add(placement.is_own_product ? 'own-product' : 'competitor-product');
     cell.dataset.placementId = placement.id;
     cell.dataset.productId = placement.product_id;
     
+    const imageHtml = placement.image_url 
+        ? `<img src="${placement.image_url}" alt="${placement.product_name}" class="product-image">`
+        : `<div class="no-image-placeholder"><i class="bi bi-image" style="font-size: 2rem; color: #dee2e6;"></i></div>`;
+    
     cell.innerHTML = `
         <div class="product-info">
-            ${placement.image_url ? `<img src="${placement.image_url}" alt="${placement.product_name}" class="product-image">` : ''}
-            <div class="product-name">${placement.product_name.substring(0, 10)}</div>
-            <small class="maker-name">${placement.maker_name.substring(0, 8)}</small>
+            ${imageHtml}
+            <div class="product-name">${placement.product_name.substring(0, 15)}</div>
         </div>
         ${placement.face_count > 1 ? `<div class="face-count editable" onclick="editFaceCount(${placement.id}, ${placement.face_count})">${placement.face_count}</div>` : ''}
     `;
+    
+    // ダブルクリックイベントを再設定
+    cell.setAttribute('ondblclick', 'handleCellDoubleClick(this)');
 }
 
-// çµ±è¨ˆæ›´æ–°
+// 統計更新
 function updateStats() {
     const occupiedCells = document.querySelectorAll('.shelf-cell.occupied');
     const ownProducts = document.querySelectorAll('.shelf-cell.own-product');
     const competitorProducts = document.querySelectorAll('.shelf-cell.competitor-product');
     const totalCells = {{ shelf.rows }} * {{ shelf.columns }};
     
-    document.getElementById('totalProducts').textContent = occupiedCells.length;
-    document.getElementById('ownProducts').textContent = ownProducts.length;
-    document.getElementById('competitorProducts').textContent = competitorProducts.length;
-    document.getElementById('occupancyRate').textContent = Math.round((occupiedCells.length / totalCells) * 100) + '%';
+    const occupiedCount = occupiedCells.length;
+    const ownCount = ownProducts.length;
+    const competitorCount = competitorProducts.length;
+    const occupancyRate = totalCells > 0 ? Math.round((occupiedCount / totalCells) * 100) : 0;
+    
+    // DOM要素が存在するかチェックしてから更新
+    const totalElement = document.getElementById('totalProducts');
+    const ownElement = document.getElementById('ownProducts');
+    const competitorElement = document.getElementById('competitorProducts');
+    const occupancyElement = document.getElementById('occupancyRate');
+    
+    if (totalElement) totalElement.textContent = occupiedCount;
+    if (ownElement) ownElement.textContent = ownCount;
+    if (competitorElement) competitorElement.textContent = competitorCount;
+    if (occupancyElement) occupancyElement.textContent = occupancyRate + '%';
+    
+    console.log('Stats updated:', {
+        total: occupiedCount,
+        own: ownCount,
+        competitor: competitorCount,
+        occupancy: occupancyRate + '%'
+    });
 }
 
-// å•†å“æ¤œç´¢
+// 商品検索
 function setupProductSearch() {
     const searchInput = document.getElementById('productSearch');
+    
+    if (!searchInput) {
+        console.warn('Product search input not found');
+        return;
+    }
+    
     searchInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
         const products = document.querySelectorAll('.product-item');
         
+        console.log('Searching products:', query, 'Found items:', products.length);
+        
         products.forEach(product => {
-            const searchText = product.dataset.searchText;
-            if (searchText.includes(query)) {
+            const searchText = product.dataset.searchText || '';
+            if (!query || searchText.includes(query)) {
                 product.style.display = 'block';
             } else {
                 product.style.display = 'none';
@@ -782,15 +1498,41 @@ function setupProductSearch() {
     });
 }
 
-// æ¤œç´¢ã‚¯ãƒªã‚¢
+// 検索クリア
 function clearSearch() {
-    document.getElementById('productSearch').value = '';
-    document.querySelectorAll('.product-item').forEach(product => {
-        product.style.display = 'block';
-    });
+    const searchInput = document.getElementById('productSearch');
+    if (searchInput) {
+        searchInput.value = '';
+        document.querySelectorAll('.product-item').forEach(product => {
+            product.style.display = 'block';
+        });
+    }
 }
 
-// ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆ
+// デバッグ用: ドラッグ&ドロップの状態を確認
+function debugDragDrop() {
+    console.log('=== Drag & Drop Debug Info ===');
+    console.log('Dragged product:', draggedProduct);
+    console.log('Product list element:', document.getElementById('productList'));
+    console.log('Shelf grid element:', document.getElementById('shelf-grid'));
+    console.log('Product items count:', document.querySelectorAll('.product-item').length);
+    
+    // 商品アイテムのデータをチェック
+    const firstProduct = document.querySelector('.product-item');
+    if (firstProduct) {
+        console.log('First product data:', {
+            id: firstProduct.dataset.productId,
+            name: firstProduct.dataset.productName,
+            maker: firstProduct.dataset.makerName,
+            isOwn: firstProduct.dataset.isOwn
+        });
+    }
+}
+
+// ウィンドウにデバッグ関数を追加（開発用）
+window.debugDragDrop = debugDragDrop;
+
+// キーボードショートカット
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey || e.metaKey) {
@@ -812,7 +1554,7 @@ function setupKeyboardShortcuts() {
     });
 }
 
-// ã‚ºãƒ¼ãƒ æ©Ÿèƒ½
+// ズーム機能
 function zoomIn() {
     currentZoom = Math.min(currentZoom * 1.2, 3);
     applyZoom();
@@ -834,7 +1576,7 @@ function applyZoom() {
     shelfGrid.style.transformOrigin = 'center';
 }
 
-// åº§æ¨™è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
+// 座標表示切り替え
 function toggleCoordinates() {
     const coordinates = document.getElementById('shelfCoordinates');
     const rowLabels = document.getElementById('shelfRowLabels');
@@ -844,7 +1586,7 @@ function toggleCoordinates() {
     rowLabels.style.display = isVisible ? 'none' : 'flex';
 }
 
-// ã‚°ãƒªãƒƒãƒ‰è¡¨ç¤ºåˆ‡ã‚Šæ›¿ãˆ
+// グリッド表示切り替え
 function toggleGrid() {
     const cells = document.querySelectorAll('.shelf-cell');
     cells.forEach(cell => {
@@ -856,15 +1598,15 @@ function toggleGrid() {
     });
 }
 
-// ãƒ•ã‚§ãƒ¼ã‚¹æ•°ç·¨é›†
+// フェース数編集
 function editFaceCount(placementId, currentCount) {
-    const newCount = prompt('ãƒ•ã‚§ãƒ¼ã‚¹æ•°ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„:', currentCount);
+    const newCount = prompt('フェース数を入力してください:', currentCount);
     if (newCount && newCount !== currentCount.toString()) {
         updateFaceCount(placementId, parseInt(newCount));
     }
 }
 
-// ãƒ•ã‚§ãƒ¼ã‚¹æ•°æ›´æ–°
+// フェース数更新
 function updateFaceCount(placementId, faceCount) {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -878,16 +1620,16 @@ function updateFaceCount(placementId, faceCount) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒªãƒ­ãƒ¼ãƒ‰
+            location.reload(); // 簡単のためリロード
         } else {
-            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+            showToast('エラー: ' + data.error, 'error');
         }
     });
 }
 
-// ãƒˆãƒ¼ã‚¹ãƒˆé€šçŸ¥
+// トースト通知
 function showToast(message, type = 'info') {
-    // Bootstrap Toastå®Ÿè£…ï¼ˆç°¡ç•¥åŒ–ï¼‰
+    // Bootstrap Toast実装（簡略化）
     const toast = document.createElement('div');
     toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} position-fixed`;
     toast.style.top = '20px';
@@ -902,60 +1644,65 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// å…ƒã«æˆ»ã™
+// 元に戻す
 function undoLastAction() {
     if (actionHistory.length > 0) {
         const lastAction = actionHistory.pop();
-        // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-        showToast('å…ƒã«æˆ»ã—ã¾ã—ãŸ', 'info');
+        // 実装は簡略化
+        showToast('元に戻しました', 'info');
     }
 }
 
-// æ£šãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆä¿å­˜
+// 棚レイアウト保存
 function saveShelfLayout() {
-    showToast('ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆã‚’ä¿å­˜ã—ã¾ã—ãŸ', 'success');
+    showToast('レイアウトを保存しました', 'success');
 }
 
-// å…¨å‰Šé™¤
+// 全削除
 function clearShelf() {
-    if (confirm('ã™ã¹ã¦ã®å•†å“ã‚’å‰Šé™¤ã—ã¾ã™ã‹ï¼Ÿ')) {
-        // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-        showToast('ã™ã¹ã¦ã®å•†å“ã‚’å‰Šé™¤ã—ã¾ã—ãŸ', 'info');
+    if (confirm('すべての商品を削除しますか？')) {
+        // 実装は簡略化
+        showToast('すべての商品を削除しました', 'info');
     }
 }
 
-// è‡ªå‹•é…ç½®
+// 自動配置
 function autoArrange() {
-    showToast('è‡ªå‹•é…ç½®æ©Ÿèƒ½ã¯é–‹ç™ºä¸­ã§ã™', 'info');
+    showToast('自動配置機能は開発中です', 'info');
 }
 
-// å•†å“æƒ…å ±ç·¨é›†
+// 商品情報編集
 function editProduct() {
-    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-    showToast('å•†å“æƒ…å ±ã‚’ç·¨é›†ã—ã¾ã—ãŸ', 'info');
+    // 実装は簡略化
+    showToast('商品情報を編集しました', 'info');
 }
 
-// å•†å“è¤‡è£½
+// 商品複製
 function duplicateProduct() {
-    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-    showToast('å•†å“ã‚’è¤‡è£½ã—ã¾ã—ãŸ', 'info');
+    // 実装は簡略化
+    showToast('商品を複製しました', 'info');
 }
 
-// å•†å“ç§»å‹•
+// 商品移動
 function moveProduct() {
-    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-    showToast('å•†å“ã‚’ç§»å‹•ã—ã¾ã—ãŸ', 'info');
+    // 実装は簡略化
+    showToast('商品を移動しました', 'info');
 }
 
-// å•†å“å‰Šé™¤
+// 商品削除
 function removeProduct() {
-    // å®Ÿè£…ã¯ç°¡ç•¥åŒ–
-    showToast('å•†å“ã‚’å‰Šé™¤ã—ã¾ã—ãŸ', 'info');
+    // 実装は簡略化
+    showToast('商品を削除しました', 'info');
 }
 
-// å•†å“å‰Šé™¤
+// 商品削除
 function removeProductFromCell(cell) {
     const placementId = cell.dataset.placementId;
+    if (!placementId) {
+        showToast('削除する商品が見つかりません', 'error');
+        return;
+    }
+    
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     formData.append('placement_id', placementId);
@@ -967,23 +1714,34 @@ function removeProductFromCell(cell) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // セルを空の状態に戻す
             cell.classList.remove('occupied');
             cell.classList.remove('own-product');
             cell.classList.remove('competitor-product');
             cell.dataset.placementId = '';
             cell.dataset.productId = '';
-            cell.innerHTML = '';
+            
+            // 空のセルの表示に戻す
+            cell.innerHTML = `
+                <div class="empty-cell-hint">
+                    <i class="bi bi-plus-circle"></i><br>
+                    ダブルクリックで<br>商品を選択
+                </div>
+            `;
+            
             updateStats();
+            showToast('商品を削除しました', 'success');
         } else {
-            showToast('ã‚¨ãƒ©ãƒ¼: ' + data.error, 'error');
+            showToast('エラー: ' + data.error, 'error');
         }
     })
     .catch(error => {
-        showToast('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error, 'error');
+        showToast('ネットワークエラーが発生しました', 'error');
+        console.error('Network error:', error);
     });
 }
 
-// å•†å“é…ç½®ç¢ºå®š
+// 商品配置確定
 function confirmPlacement() {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -1002,17 +1760,17 @@ function confirmPlacement() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒšãƒ¼ã‚¸ã‚’ãƒªãƒ­ãƒ¼ãƒ‰
+            location.reload(); // 簡単のためページをリロード
         } else {
-            alert('ã‚¨ãƒ©ãƒ¼: ' + data.error);
+            alert('エラー: ' + data.error);
         }
     })
     .catch(error => {
-        alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error);
+        alert('エラーが発生しました: ' + error);
     });
 }
 
-// å•†å“å‰Šé™¤ç¢ºå®š
+// 商品削除確定
 function confirmRemoval() {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
@@ -1025,13 +1783,13 @@ function confirmRemoval() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(); // ç°¡å˜ã®ãŸã‚ãƒšãƒ¼ã‚¸ã‚’ãƒªãƒ­ãƒ¼ãƒ‰
+            location.reload(); // 簡単のためページをリロード
         } else {
-            alert('ã‚¨ãƒ©ãƒ¼: ' + data.error);
+            alert('エラー: ' + data.error);
         }
     })
     .catch(error => {
-        alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + error);
+        alert('エラーが発生しました: ' + error);
     });
 }
 </script>

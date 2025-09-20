@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ title }} - æ£šå‰²ã‚Šã‚¢ãƒ—ãƒª{% endblock %}
+{% block title %}{{ title }} - 棚割りアプリ{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -27,13 +27,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.product_name.id_for_label }}" class="form-label">å•†å“å <span class="text-danger">*</span></label>
+                                <label for="{{ form.product_name.id_for_label }}" class="form-label">商品名 <span class="text-danger">*</span></label>
                                 {{ form.product_name }}
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.product_code.id_for_label }}" class="form-label">JANã‚³ãƒ¼ãƒ‰ <span class="text-danger">*</span></label>
+                                <label for="{{ form.product_code.id_for_label }}" class="form-label">JANコード <span class="text-danger">*</span></label>
                                 {{ form.product_code }}
                             </div>
                         </div>
@@ -42,7 +42,7 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.maker.id_for_label }}" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼ <span class="text-danger">*</span></label>
+                                <label for="{{ form.maker.id_for_label }}" class="form-label">メーカー <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     {{ form.maker }}
                                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#makerModal">
@@ -53,7 +53,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.brand.id_for_label }}" class="form-label">ãƒ–ãƒ©ãƒ³ãƒ‰</label>
+                                <label for="{{ form.brand.id_for_label }}" class="form-label">ブランド</label>
                                 <div class="input-group">
                                     {{ form.brand }}
                                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#brandModal">
@@ -64,7 +64,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.category.id_for_label }}" class="form-label">ã‚«ãƒ†ã‚´ãƒª <span class="text-danger">*</span></label>
+                                <label for="{{ form.category.id_for_label }}" class="form-label">カテゴリ <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     {{ form.category }}
                                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal">
@@ -78,13 +78,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.size.id_for_label }}" class="form-label">å®¹é‡ãƒ»è¦æ ¼</label>
+                                <label for="{{ form.size.id_for_label }}" class="form-label">容量・規格</label>
                                 {{ form.size }}
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.price.id_for_label }}" class="form-label">ä¾¡æ ¼</label>
+                                <label for="{{ form.price.id_for_label }}" class="form-label">価格</label>
                                 {{ form.price }}
                             </div>
                         </div>
@@ -93,19 +93,19 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.width.id_for_label }}" class="form-label">å¹…(cm)</label>
+                                <label for="{{ form.width.id_for_label }}" class="form-label">幅(cm)</label>
                                 {{ form.width }}
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.height.id_for_label }}" class="form-label">é«˜ã•(cm)</label>
+                                <label for="{{ form.height.id_for_label }}" class="form-label">高さ(cm)</label>
                                 {{ form.height }}
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.depth.id_for_label }}" class="form-label">å¥¥è¡Œã(cm)</label>
+                                <label for="{{ form.depth.id_for_label }}" class="form-label">奥行(cm)</label>
                                 {{ form.depth }}
                             </div>
                         </div>
@@ -114,7 +114,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.image.id_for_label }}" class="form-label">å•†å“ç”»åƒ</label>
+                                <label for="{{ form.image.id_for_label }}" class="form-label">商品画像</label>
                                 {{ form.image }}
                             </div>
                         </div>
@@ -123,7 +123,7 @@
                                 <div class="form-check">
                                     {{ form.is_own_product }}
                                     <label class="form-check-label" for="{{ form.is_own_product.id_for_label }}">
-                                        è‡ªç¤¾å•†å“
+                                        自社商品
                                     </label>
                                 </div>
                             </div>
@@ -132,10 +132,10 @@
 
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'products:product_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> æˆ»ã‚‹
+                            <i class="bi bi-arrow-left"></i> 戻る
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> ä¿å­˜
+                            <i class="bi bi-check-circle"></i> 保存
                         </button>
                     </div>
                 </form>
@@ -144,94 +144,94 @@
     </div>
 </div>
 
-<!-- ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<!-- メーカー追加モーダル -->
 <div class="modal fade" id="makerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ </h5>
+                <h5 class="modal-title">メーカー追加</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="makerForm">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="makerName" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼å</label>
+                        <label for="makerName" class="form-label">メーカー名</label>
                         <input type="text" class="form-control" id="makerName" name="name" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
-                <button type="button" class="btn btn-primary" onclick="addMaker()">è¿½åŠ </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="addMaker()">追加</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<!-- ブランド追加モーダル -->
 <div class="modal fade" id="brandModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ </h5>
+                <h5 class="modal-title">ブランド追加</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="brandForm">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="brandMaker" class="form-label">ãƒ¡ãƒ¼ã‚«ãƒ¼</label>
+                        <label for="brandMaker" class="form-label">メーカー</label>
                         <select class="form-select" id="brandMaker" name="maker" required>
-                            <option value="">é¸æŠžã—ã¦ãã ã•ã„</option>
+                            <option value="">選択してください</option>
                             {% for maker in form.maker.field.queryset %}
                                 <option value="{{ maker.id }}">{{ maker.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="brandName" class="form-label">ãƒ–ãƒ©ãƒ³ãƒ‰å</label>
+                        <label for="brandName" class="form-label">ブランド名</label>
                         <input type="text" class="form-control" id="brandName" name="name" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
-                <button type="button" class="btn btn-primary" onclick="addBrand()">è¿½åŠ </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="addBrand()">追加</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ã‚«ãƒ†ã‚´ãƒªè¿½åŠ ãƒ¢ãƒ¼ãƒ€ãƒ« -->
+<!-- カテゴリ追加モーダル -->
 <div class="modal fade" id="categoryModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">ã‚«ãƒ†ã‚´ãƒªè¿½åŠ </h5>
+                <h5 class="modal-title">カテゴリ追加</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="categoryForm">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="categoryParent" class="form-label">è¦ªã‚«ãƒ†ã‚´ãƒª</label>
+                        <label for="categoryParent" class="form-label">親カテゴリ</label>
                         <select class="form-select" id="categoryParent" name="parent">
-                            <option value="">ãªã—ï¼ˆãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ï¼‰</option>
+                            <option value="">なし（トップレベル）</option>
                             {% for category in form.category.field.queryset %}
                                 <option value="{{ category.id }}">{{ category.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="categoryName" class="form-label">ã‚«ãƒ†ã‚´ãƒªå</label>
+                        <label for="categoryName" class="form-label">カテゴリ名</label>
                         <input type="text" class="form-control" id="categoryName" name="name" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ã‚­ãƒ£ãƒ³ã‚»ãƒ«</button>
-                <button type="button" class="btn btn-primary" onclick="addCategory()">è¿½åŠ </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="addCategory()">追加</button>
             </div>
         </div>
     </div>
@@ -240,7 +240,7 @@
 
 {% block extra_js %}
 <script>
-// ãƒ¡ãƒ¼ã‚«ãƒ¼è¿½åŠ 
+// メーカー追加
 function addMaker() {
     const form = document.getElementById('makerForm');
     const formData = new FormData(form);
@@ -255,24 +255,24 @@ function addMaker() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // ãƒ¡ãƒ¼ã‚«ãƒ¼é¸æŠžè‚¢ã«è¿½åŠ 
+            // メーカー選択肢に追加
             const makerSelect = document.getElementById('{{ form.maker.id_for_label }}');
             const option = new Option(data.maker.name, data.maker.id, true, true);
             makerSelect.add(option);
             
-            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            // モーダルを閉じる
             const modal = bootstrap.Modal.getInstance(document.getElementById('makerModal'));
             modal.hide();
             
-            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            // フォームをリセット
             form.reset();
         } else {
-            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+            alert('エラーが発生しました: ' + JSON.stringify(data.errors));
         }
     });
 }
 
-// ãƒ–ãƒ©ãƒ³ãƒ‰è¿½åŠ 
+// ブランド追加
 function addBrand() {
     const form = document.getElementById('brandForm');
     const formData = new FormData(form);
@@ -287,24 +287,24 @@ function addBrand() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // ãƒ–ãƒ©ãƒ³ãƒ‰é¸æŠžè‚¢ã«è¿½åŠ 
+            // ブランド選択肢に追加
             const brandSelect = document.getElementById('{{ form.brand.id_for_label }}');
             const option = new Option(data.brand.name, data.brand.id, true, true);
             brandSelect.add(option);
             
-            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            // モーダルを閉じる
             const modal = bootstrap.Modal.getInstance(document.getElementById('brandModal'));
             modal.hide();
             
-            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            // フォームをリセット
             form.reset();
         } else {
-            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+            alert('エラーが発生しました: ' + JSON.stringify(data.errors));
         }
     });
 }
 
-// ã‚«ãƒ†ã‚´ãƒªè¿½åŠ 
+// カテゴリ追加
 function addCategory() {
     const form = document.getElementById('categoryForm');
     const formData = new FormData(form);
@@ -319,24 +319,24 @@ function addCategory() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // ã‚«ãƒ†ã‚´ãƒªé¸æŠžè‚¢ã«è¿½åŠ 
+            // カテゴリ選択肢に追加
             const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
             const option = new Option(data.category.name, data.category.id, true, true);
             categorySelect.add(option);
             
-            // ãƒ¢ãƒ¼ãƒ€ãƒ«ã‚’é–‰ã˜ã‚‹
+            // モーダルを閉じる
             const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
             modal.hide();
             
-            // ãƒ•ã‚©ãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ
+            // フォームをリセット
             form.reset();
         } else {
-            alert('ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸ: ' + JSON.stringify(data.errors));
+            alert('エラーが発生しました: ' + JSON.stringify(data.errors));
         }
     });
 }
 
-// ãƒ¡ãƒ¼ã‚«ãƒ¼å¤‰æ›´æ™‚ã«ãƒ–ãƒ©ãƒ³ãƒ‰ã‚’æ›´æ–°
+// メーカー変更時にブランドを更新
 document.getElementById('{{ form.maker.id_for_label }}').addEventListener('change', function() {
     const makerId = this.value;
     const brandSelect = document.getElementById('{{ form.brand.id_for_label }}');
@@ -345,13 +345,13 @@ document.getElementById('{{ form.maker.id_for_label }}').addEventListener('chang
         fetch(`{% url "products:get_brands_by_maker" %}?maker_id=${makerId}`)
         .then(response => response.json())
         .then(data => {
-            brandSelect.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
+            brandSelect.innerHTML = '<option value="">選択してください</option>';
             data.brands.forEach(brand => {
                 brandSelect.add(new Option(brand.name, brand.id));
             });
         });
     } else {
-        brandSelect.innerHTML = '<option value="">é¸æŠžã—ã¦ãã ã•ã„</option>';
+        brandSelect.innerHTML = '<option value="">選択してください</option>';
     }
 });
 </script>
