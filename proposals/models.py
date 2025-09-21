@@ -1,4 +1,5 @@
 # ==================== proposals/models.py ====================
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -74,4 +75,3 @@ class Proposal(models.Model):
             'competitor_faces': competitor_faces,
             'own_share': round((own_faces / total_faces) * 100, 1) if total_faces > 0 else 0,
         }
-

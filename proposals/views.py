@@ -14,9 +14,6 @@ from .models import Proposal, Customer
 from .forms import ProposalForm
 
 
-from utils.pdf_generator import ShelfLayoutPDFGenerator
-from utils.image_processor import ShelfImageProcessor
-
 class ProposalListView(ListView):
     """提案一覧"""
     model = Proposal
@@ -205,49 +202,4 @@ def export_excel(request, pk):
     output.seek(0)
     response = HttpResponse(output.getvalue(), content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="{proposal.title}_商品配置一覧.csv"'
-    return response
-
-def export_advanced_pdf(request, pk):
-    """高機能PDF出力"""
-    proposal = get_object_or_404(Proposal, pk=pk)
-    
-    # PDF生成
-    generator = ShelfLayoutPDFGenerator(proposal)
-    pdf_content = generator.generate_comprehensive_pdf()
-    
-    # レスポンス作成
-    response = HttpResponse(pdf_content, content_type='application/pdf')
-    filename = f"{proposal.title}_詳細提案書_{datetime.now().strftime('%Y%m%d')}.pdf"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    return response
-
-
-def export_layout_image(request, pk):
-    """レイアウト画像出力"""
-    proposal = get_object_or_404(Proposal, pk=pk)
-    shelf = proposal.shelf
-    
-    # 配置データ取得
-    from shelves.models import ShelfPlacement
-    placements = ShelfPlacement.objects.filter(shelf=shelf).select_related('product', 'product__maker')
-    
-    # 画像生成
-    processor = ShelfImageProcessor(shelf)
-    image_format = request.GET.get('format', 'PNG').upper()
-    high_res = request.GET.get('high_res', 'false').lower() == 'true'
-    
-    image_data = processor.generate_shelf_layout_image(
-        placements, 
-        output_format=image_format, 
-        high_resolution=high_res
-    )
-    
-    # レスポンス作成
-    content_type = 'image/png' if image_format == 'PNG' else 'image/jpeg'
-    response = HttpResponse(image_data, content_type=content_type)
-    
-    filename = f"{proposal.title}_レイアウト_{datetime.now().strftime('%Y%m%d')}.{image_format.lower()}"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
     return response
